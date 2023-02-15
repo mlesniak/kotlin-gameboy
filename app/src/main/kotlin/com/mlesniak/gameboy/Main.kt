@@ -16,9 +16,14 @@ class Rom(
     fun dump() {
         hexdump(bytes)
     }
+
+    // 0104-0133 - Nintendo Logo
+    fun dumpLogo() {
+        hexdump(bytes, 0x104..0x0133)
+    }
 }
 
 fun main() {
     val rom = Rom("rom/tetris.gb")
-    rom.dump()
+    rom.dumpLogo()
 }
