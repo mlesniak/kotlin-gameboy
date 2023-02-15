@@ -1,7 +1,6 @@
 package com.mlesniak.gameboy
 
 import com.mlesniak.gameboy.Debug.hexdump
-import java.lang.Byte.parseByte
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -35,18 +34,13 @@ fun main() {
     // rom.dumpLogo()
 
     // Hack mode on...
-    // val colors = parseByte(0xce.toByte(), 0xed.toByte())
-    // println(colors)
-    val tile1 = rom.bytes().slice(0x104..0x133).chunked(16)[0]
-    val lines = tile1.chunked(2).map { line ->
-        val l = parseByte(line[0], line[1])
-        l
+    val tiles = rom.bytes().slice(0x104..0x133).chunked(16)
+    tiles.forEach { tile ->
+        val lines = tile
+            .chunked(2).map { parseByte(it[0], it[1]) }
+            .map { it.joinToString("").replace('0', '.') }
+            .forEach(::println)
     }
-    lines.forEach {
-        val k = it.joinToString("").replace('0', '.')
-        println(k)
-    }
-
 }
 
 // For each line, the first byte defines the least significant bits of the color
