@@ -5,16 +5,23 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class Rom(
-    filename: String,
+    bootRom: Path,
+    cartridge: Path,
 ) {
     private var bytes: UByteArray
+    private var rom: UByteArray
 
     init {
-        bytes = Files.readAllBytes(Path.of(filename)).toUByteArray()
+        bytes = Files.readAllBytes(cartridge).toUByteArray()
+        rom = Files.readAllBytes(bootRom).toUByteArray()
     }
 
     fun dump() {
         hexdump(bytes)
+    }
+
+    fun dumpBootRom() {
+        hexdump(rom)
     }
 
     fun dumpTitle() {
@@ -99,7 +106,9 @@ class Rom(
 }
 
 fun main() {
-    val rom = Rom("rom/tetris.gb")
-    rom.dumpTitle()
-    rom.showLogo()
+    val rom = Rom(Path.of("rom/boot.gb"), Path.of("rom/tetris.gb"))
+    // rom.dumpTitle()
+    // rom.showLogo()
+
+    rom.dumpBootRom()
 }
