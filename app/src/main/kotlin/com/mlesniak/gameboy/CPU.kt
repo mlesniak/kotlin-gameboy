@@ -27,7 +27,7 @@ class CPU(
                 // XOR A
                 0xAF -> {
                     a = 0x00
-                    f = f and 0b1000000
+                    f = f or 0b10000000
                 }
 
                 else -> {
@@ -42,7 +42,7 @@ class CPU(
         println("PC ${pc.hex(4)}")
         println("SP ${sp.hex(4)}")
         println("A  ${a.hex(2)}")
-        println("F  ${a.binary(8).substring(0..5)}")
+        println("F  ${f.binary(8).substring(0..5)}")
         val ds = (pc - 0x10).clamp(0)
         val es = (pc + 0x10).clamp(0, code.size)
         Debug.hexdump(code, ds..es)
