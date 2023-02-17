@@ -5,23 +5,27 @@ import java.lang.Integer.min
 
 // Let's start as simple as possible.
 class CPU(
-    val code: UByteArray
+    private val code: UByteArray
 ) {
-    // Should we use shorts or ints?
-    var af: Int = 0x0000 // Accumulator and flag
-    var bc: Int = 0x0000 // Can be used as two 8 bit registers.
-    var de: Int = 0x0000 // Can be used as two 8 bit registers.
-    var hl: Int = 0x0000 // Can be used as two 8 bit registers and as a 16 bit one. Index register.
+    // Should we use bytes or ints?
+    var a: Int = 0x00 // Accumulator
+    var f: Int = 0x00 // Flags: zero subtraction half-carry carry 0000
     var sp: Int = 0x0000 // Stack pointer.
     var pc: Int = 0x0000 // Program counter.
 
     fun run() {
         while (true) {
             when (val opcode = nextOpcode()) {
+                // LD SP, nnnn
                 0x31 -> {
                     val low = nextOpcode()
                     val high = nextOpcode()
                     sp = high * 0x100 + low
+                }
+                // XOR A
+                0xAF -> {
+                    a = 0x00
+                    f = f and 0b1000000
                 }
 
                 else -> {
@@ -35,6 +39,8 @@ class CPU(
     private fun dump() {
         println("PC ${pc.hex(4)}")
         println("SP ${sp.hex(4)}")
+        println("A  ${a.hex(2)}")
+        println("F  ${a.binary(8).substring(0..5)}")
         val ds = (pc - 0x10).clamp(0)
         val es = (pc + 0x10).clamp(0, code.size)
         Debug.hexdump(code, ds..es)
@@ -44,5 +50,6 @@ class CPU(
 }
 
 fun Number.hex(padding: Int = 0) = "0x" + ("%X".format(this).padStart(padding, '0'))
+fun Int.binary(padding: Int = 0) = "0b" + (Integer.toBinaryString(this).padStart(padding, '0'))
 
 fun Int.clamp(minVal: Int, maxVal: Int = Int.MAX_VALUE) = max(min(this, maxVal), minVal)
