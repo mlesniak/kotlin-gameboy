@@ -7,6 +7,6 @@ fun main() {
     // rom.dumpTitle()
     // rom.showLogo()
     // rom.dumpBootRom()
-    val cpu = CPU()
-    cpu.execute(rom.bootRom())
+    val cpu = CPU(rom.bootRom())
+    cpu.run()
 }

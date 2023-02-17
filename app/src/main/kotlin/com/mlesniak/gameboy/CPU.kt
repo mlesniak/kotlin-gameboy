@@ -4,8 +4,10 @@ import java.lang.Integer.max
 import java.lang.Integer.min
 
 // Let's start as simple as possible.
-class CPU {
-    // Should we use shorts? or bytes? or ints?
+class CPU(
+    val code: UByteArray
+) {
+    // Should we use shorts or ints?
     var af: Int = 0x0000 // Accumulator and flag
     var bc: Int = 0x0000 // Can be used as two 8 bit registers.
     var de: Int = 0x0000 // Can be used as two 8 bit registers.
@@ -13,22 +15,34 @@ class CPU {
     var sp: Int = 0x0000 // Stack pointer.
     var pc: Int = 0x0000 // Program counter.
 
-    fun execute(code: UByteArray) {
+    fun run() {
         while (true) {
-            val opcode = code[pc].toInt()
-            when (opcode) {
+            when (val opcode = nextOpcode()) {
+                0x31 -> {
+                    val low = nextOpcode()
+                    val high = nextOpcode()
+                    sp = high * 0x100 + low
+                }
+
                 else -> {
-                    val ds = (pc - 0x10).clamp(0)
-                    val es = (pc + 0x10).clamp(0, code.size)
-                    Debug.hexdump(code, ds..es)
-                    throw IllegalStateException("Unknown opcode 0x${opcode.hex()} at 0x${pc.hex()}")
+                    dump()
+                    throw IllegalStateException("Unknown opcode ${opcode.hex()} at ${pc.hex()}")
                 }
             }
-            pc++
         }
     }
+
+    private fun dump() {
+        println("PC ${pc.hex(4)}")
+        println("SP ${sp.hex(4)}")
+        val ds = (pc - 0x10).clamp(0)
+        val es = (pc + 0x10).clamp(0, code.size)
+        Debug.hexdump(code, ds..es)
+    }
+
+    private fun nextOpcode() = code[pc++].toInt()
 }
 
-fun Number.hex() = "%X".format(this)
+fun Number.hex(padding: Int = 0) = "0x" + ("%X".format(this).padStart(padding, '0'))
 
 fun Int.clamp(minVal: Int, maxVal: Int = Int.MAX_VALUE) = max(min(this, maxVal), minVal)
