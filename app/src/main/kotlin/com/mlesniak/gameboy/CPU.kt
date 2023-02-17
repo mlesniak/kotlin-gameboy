@@ -13,6 +13,8 @@ class CPU(
     var sp: Int = 0x0000 // Stack pointer.
     var pc: Int = 0x0000 // Program counter.
 
+    // TODO(mlesniak) Refactor once we have a better feeling for the
+    //                structure.
     fun run() {
         while (true) {
             when (val opcode = nextOpcode()) {
