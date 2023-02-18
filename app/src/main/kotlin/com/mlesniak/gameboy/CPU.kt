@@ -3,6 +3,8 @@ package com.mlesniak.gameboy
 import org.graalvm.collections.EconomicMap
 import java.lang.Integer.max
 import java.lang.Integer.min
+import javax.print.attribute.IntegerSyntax
+import kotlin.system.exitProcess
 
 // Let's start as simple as possible.
 class CPU(
@@ -22,6 +24,11 @@ class CPU(
     //                structure.
     fun run() {
         while (true) {
+            println()
+            dump()
+            // println("next opcode ${code[pc].toInt().hex(2)}")
+            // print("?")
+            // readLine()
             when (val opcode = nextOpcode()) {
                 // LD SP, nnnn
                 0x31 -> {
@@ -44,8 +51,40 @@ class CPU(
                     mem[hl] = a
                     hl--
                 }
+                // JR NZ, n (signed)
+                0x20 -> {
+                    val delta = nextOpcode().toByte()
+                    if (f and (0x01 shl 7) != 0) {
+                        pc += delta
+                    }
+                }
+                // Extended command.
+                0xCB -> {
+                    when (val opcode = nextOpcode()) {
+                        // BIT 7,H Zero and Half-Carry Flag
+                        // Test if bit 7 is set in H
+                        0x7C -> {
+                            val h = hl shr 8
+                            val s = h and (0x01 shl 8) != 0x00
+                            if (s) {
+                                f = f or 0b10000000
+                            } else {
+                                f = f and (0x01 shl 8).inv()
+                                println(Integer.toBinaryString(f))
+                            }
+                            f = f and (0x01 shl 5).inv()
+                        }
+
+                        else -> {
+                            pc -= 1
+                            dump()
+                            throw IllegalStateException("Unknown opcode 0xCB ${opcode.hex(2)} at ${pc.hex(4)}")
+                        }
+                    }
+                }
 
                 else -> {
+                    pc -= 1
                     dump()
                     throw IllegalStateException("Unknown opcode ${opcode.hex(2)} at ${pc.hex(4)}")
                 }
