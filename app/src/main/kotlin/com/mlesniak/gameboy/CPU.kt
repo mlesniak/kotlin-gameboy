@@ -1,10 +1,7 @@
 package com.mlesniak.gameboy
 
-import org.graalvm.collections.EconomicMap
 import java.lang.Integer.max
 import java.lang.Integer.min
-import javax.print.attribute.IntegerSyntax
-import kotlin.system.exitProcess
 
 // Let's start as simple as possible.
 class CPU(
@@ -13,6 +10,7 @@ class CPU(
     // Should we use bytes or ints?
     var a: Int = 0x00 // Accumulator
     var f: Int = 0x00 // Flags: zero subtraction half-carry carry 0000
+    //                            7      6           5         4
     var hl: Int = 0x00
     var sp: Int = 0x0000 // Stack pointer.
     var pc: Int = 0x0000 // Program counter.
@@ -24,8 +22,8 @@ class CPU(
     //                structure.
     fun run() {
         while (true) {
-            println()
-            dump()
+            // println()
+            // dump()
             // println("next opcode ${code[pc].toInt().hex(2)}")
             // print("?")
             // readLine()
@@ -65,13 +63,13 @@ class CPU(
                         // Test if bit 7 is set in H
                         0x7C -> {
                             val h = hl shr 8
-                            val s = h and (0x01 shl 8) != 0x00
-                            if (s) {
+                            val zeroBitCond = h and (0x01 shl 7) != 0x00
+                            if (zeroBitCond) {
                                 f = f or 0b10000000
                             } else {
-                                f = f and (0x01 shl 8).inv()
-                                println(Integer.toBinaryString(f))
+                                f = f and (0x01 shl 7).inv()
                             }
+                            // HC
                             f = f and (0x01 shl 5).inv()
                         }
 
@@ -107,6 +105,6 @@ class CPU(
 }
 
 fun Number.hex(padding: Int = 0) = "0x" + ("%X".format(this).padStart(padding, '0'))
-fun Int.binary(padding: Int = 0) = "0b" + (Integer.toBinaryString(this).padStart(padding, '0'))
+fun Int.binary(padding: Int = 8) = "0b" + (Integer.toBinaryString(this).padStart(padding, '0'))
 
 fun Int.clamp(minVal: Int, maxVal: Int = Int.MAX_VALUE) = max(min(this, maxVal), minVal)
