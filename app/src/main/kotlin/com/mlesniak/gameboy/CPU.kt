@@ -9,6 +9,10 @@ class CPU(
 ) {
     // Should we use bytes or ints?
     var a: Int = 0x00 // Accumulator
+    var b: Int = 0x00 // Accumulator
+    var c: Int = 0x00
+    var d: Int = 0x00
+    var e: Int = 0x00
     var f: Int = 0x00 // Flags: zero subtraction half-carry carry 0000
     //                            7      6           5         4
     var hl: Int = 0x00
@@ -16,11 +20,25 @@ class CPU(
     var pc: Int = 0x0000 // Program counter.
 
     // Memory including VRAM (0x8000..0x9FFF).
-    val mem: IntArray = IntArray(0x9FFF + 0x01)
+    val mem: IntArray = IntArray(0xFFFF)
+
+    fun run() {
+        // Copy code into memory.
+        // TODO(mlesniak) Execute code from memory and not code
+        for (i in code.indices) {
+            mem[i] = code[i].toInt()
+        }
+        try {
+            _run()
+        } catch (e: Exception) {
+            dump()
+            throw(e)
+        }
+    }
 
     // TODO(mlesniak) Refactor once we have a better feeling for the
     //                structure.
-    fun run() {
+    fun _run() {
         while (true) {
             // println()
             // dump()
@@ -28,6 +46,55 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // PUSH BC
+                0xC5 -> {
+                    mem[sp] = b
+                    mem[sp-1] = c
+                    sp -= 2
+                }
+                // LD B,d8
+                0x06 -> {
+                    b = nextOpcode()
+                }
+                // LD C,A
+                0x4F -> {
+                    c = a
+                }
+                // CALL a16
+                0xCD -> {
+                    val newpc = nextOpcode() + 0x100 * nextOpcode()
+                    mem[sp] = pc
+                    sp -= 2
+                    pc = newpc
+                }
+                // LD A,(DE)
+                0x1A -> {
+                    val addr = d * 0x100 + e
+                    a = mem[addr]
+                }
+                // LD DE, nnnn
+                0x11 -> {
+                    e = nextOpcode()
+                    d = nextOpcode()
+                }
+                // LHD (nn), A
+                0xE0 -> {
+                    val adr = 0xFF00 + nextOpcode()
+                    mem[adr] = a
+                }
+                // LD (HL),A
+                0x77 -> {
+                    mem[hl] = a
+                }
+                // INC C
+                0x0C -> {
+                    c++
+                }
+                // LD (C), A
+                0xE2 -> {
+                    val adr = 0xFF00 + c
+                    mem[adr] = a
+                }
                 // LD SP, nnnn
                 0x31 -> {
                     val low = nextOpcode()
@@ -49,6 +116,14 @@ class CPU(
                     mem[hl] = a
                     hl--
                 }
+                // LD c, nn
+                0x0E -> {
+                    c = nextOpcode()
+                }
+                // LD A, nn
+                0x3E -> {
+                    a = nextOpcode()
+                }
                 // JR NZ, n (signed)
                 0x20 -> {
                     val delta = nextOpcode().toByte()
@@ -59,6 +134,11 @@ class CPU(
                 // Extended command.
                 0xCB -> {
                     when (val opcode = nextOpcode()) {
+                        // RL C
+                        0x11 -> {
+                           // Rotate n left through Carry flag.
+                           // TODO(mlesniak) continue here
+                        }
                         // BIT 7,H Zero and Half-Carry Flag
                         // Test if bit 7 is set in H
                         0x7C -> {
@@ -74,7 +154,7 @@ class CPU(
                         }
 
                         else -> {
-                            pc -= 1
+                            pc -= 2
                             dump()
                             throw IllegalStateException("Unknown opcode 0xCB ${opcode.hex(2)} at ${pc.hex(4)}")
                         }
@@ -94,6 +174,10 @@ class CPU(
         println("PC ${pc.hex(4)}")
         println("SP ${sp.hex(4)}")
         println("A  ${a.hex(2)}")
+        println("B  ${b.hex(2)}")
+        println("C  ${c.hex(2)}")
+        println("D  ${d.hex(2)}")
+        println("E  ${e.hex(2)}")
         println("F  ${f.binary(8).substring(0..5)}")
         println("HL ${hl.hex(4)}")
         val ds = (pc - 0x10).clamp(0)
