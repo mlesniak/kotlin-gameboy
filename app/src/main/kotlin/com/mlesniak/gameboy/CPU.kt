@@ -47,6 +47,21 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // RET
+                // TODO(mlesniak) inifinite loop here
+                0xC9 -> {
+                   pc = mem[sp] + mem[sp+1] * 0x100
+                   sp += 2
+                }
+                // LD (HL+),A
+                0x22 -> {
+                    mem[hl] = a
+                    hl++
+                }
+                // INC HL
+                0x23 -> {
+                    hl++
+                }
                 // DEC B  Zero, substract, half-carry (todo)
                 0x05 -> {
                     b -= 1
