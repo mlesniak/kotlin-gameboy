@@ -14,6 +14,7 @@ class CPU(
     var d: Int = 0x00
     var e: Int = 0x00
     var f: Int = 0x00 // Flags: zero subtraction half-carry carry 0000
+
     //                            7      6           5         4
     var hl: Int = 0x00
     var sp: Int = 0x0000 // Stack pointer.
@@ -32,7 +33,7 @@ class CPU(
             _run()
         } catch (e: Exception) {
             dump()
-            throw(e)
+            throw (e)
         }
     }
 
@@ -46,10 +47,40 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // DEC B  Zero, substract, half-carry (todo)
+                0x05 -> {
+                    b -= 1
+                    f = if (b == 0) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                    f = f or 0b01000000
+                }
+                // POP BC
+                0xC1 -> {
+                    c = mem[sp]
+                    b = mem[sp + 1]
+                    sp += 2
+                }
+                // RLA , sets carry and zero bit
+                0x17 -> {
+                    // Rotate n left through Carry flag.
+                    // Affect Z and C
+                    val bit = (a and (0x01 shl 7)) != 0x00
+                    c = (a shl 1) % 0x100
+                    // Zero
+                    val zeroBitCond = a == 0x00
+                    f = if (zeroBitCond) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                }
                 // PUSH BC
                 0xC5 -> {
                     mem[sp] = b
-                    mem[sp-1] = c
+                    mem[sp - 1] = c
                     sp -= 2
                 }
                 // LD B,d8
@@ -136,8 +167,24 @@ class CPU(
                     when (val opcode = nextOpcode()) {
                         // RL C
                         0x11 -> {
-                           // Rotate n left through Carry flag.
-                           // TODO(mlesniak) continue here
+                            // Rotate n left through Carry flag.
+                            // Affect Z and C
+                            val bit = (c and (0x01 shl 7)) != 0x00
+                            c = (c shl 1) % 0x100
+                            // Zero
+                            val zeroBitCond = c == 0x00
+                            f = if (zeroBitCond) {
+                                f or 0b10000000
+                            } else {
+                                f and (0x01 shl 7).inv()
+                            }
+
+                            // set carry to flag.
+                            if (bit) {
+                                f = f or (0x01 shl 4)
+                            } else {
+                                f = f and (0x01 shl 4).inv()
+                            }
                         }
                         // BIT 7,H Zero and Half-Carry Flag
                         // Test if bit 7 is set in H
