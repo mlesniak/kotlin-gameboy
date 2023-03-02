@@ -48,10 +48,13 @@ class CPU(
             // readLine()
             when (val opcode = nextOpcode()) {
                 // RET
-                // TODO(mlesniak) inifinite loop here
                 0xC9 -> {
-                   pc = mem[sp] + mem[sp+1] * 0x100
-                   sp += 2
+                    // dump()
+                    pc = mem[sp+1]*0x100 + mem[sp + 2]
+                    sp += 2
+                    // println("=== RET")
+                    // dump()
+                    // readLine()
                 }
                 // LD (HL+),A
                 0x22 -> {
@@ -109,7 +112,15 @@ class CPU(
                 // CALL a16
                 0xCD -> {
                     val newpc = nextOpcode() + 0x100 * nextOpcode()
-                    mem[sp] = pc
+                    // println("NEWPC ${newpc.hex(4)}")
+                    // pc = mem[sp] + mem[sp + 1] * 0x100
+                    //
+                    // 100 sp+1
+                    //  99 sp
+                    //
+                    mem[sp] = pc % 0x100
+                    mem[sp - 1] = pc / 0x100
+                    // println("[sp]=${mem[sp].hex(2)}  [sp-1]=${mem[sp-1].hex(2)}")
                     sp -= 2
                     pc = newpc
                 }
