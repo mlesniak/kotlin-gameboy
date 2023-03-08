@@ -2,6 +2,8 @@ package com.mlesniak.gameboy
 
 import java.lang.Integer.max
 import java.lang.Integer.min
+import kotlin.experimental.inv
+import kotlin.system.exitProcess
 
 // Let's start as simple as possible.
 class CPU(
@@ -47,12 +49,74 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // INC H
+                0x24 -> {
+                    hl = (hl / 0x100 + 1)  * 0x100 + hl % 0x100
+                }
+                // DEC E
+                0x1D -> {
+                    e--
+                    f = if (e == 0) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                }
+                // LDH A,(a8)
+                0xF0 -> {
+                    val addr = 0xFF00 + nextOpcode()
+                    a = mem[addr]
+                }
+                // LD E,d8
+                0x1E -> {
+                    e = nextOpcode()
+                }
+                // INC B
+                0x04 -> {
+                    // Ignore registers for now.
+                    b++
+                }
+                // LD D,A
+                0x57 -> {
+                    d = a
+                }
+                // LD H,A
+                0x67 -> {
+                    hl = hl % 0x100 + a * 0x100
+                }
+                // JR r8
+                0x18 -> {
+                    var dst = nextOpcode()
+                    if (dst > 127) {
+                        // Signed numbers are stored in two-complements.
+                        dst = -(((dst - 1).toByte() ).toInt()).inv()
+                    }
+                    pc += dst
+                }
+                // LD L,d8
+                0x2E -> {
+                    // TODO(mlesniak) Or is it little endian stored and we should update H?
+                    val v = nextOpcode()
+                    hl = (hl / 0x100) * 0x100 + v
+                }
+                // DEC C
+                0x0D -> {
+                    c--
+                    if (c < 0) {
+                        c = 0
+                    }
+                    f = if (c == 0) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                }
                 // JR Z,r8
                 0x28 -> {
                     // signed jump destination
                     var dst = nextOpcode()
                     if (dst > 127) {
-                        dst = 127 - dst
+                        dst = -(((dst - 1).toByte() ).toInt()).inv()
                     }
                     val targetPC = pc + dst
                     if (f and (0x01 shl 7) != 0) {
