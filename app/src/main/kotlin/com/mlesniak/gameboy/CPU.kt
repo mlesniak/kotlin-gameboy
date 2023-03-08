@@ -47,6 +47,55 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // JR Z,r8
+                0x28 -> {
+                    // signed jump destination
+                    var dst = nextOpcode()
+                    if (dst > 127) {
+                        dst = 127 - dst
+                    }
+                    val targetPC = pc + dst
+                    if (f and (0x01 shl 7) != 0) {
+                        pc = targetPC
+                    }
+                }
+                // DEC A
+                0x3D -> {
+                    a--
+                    if (a < 0) {
+                        a = 0
+                    }
+                    f = if (a == 0) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                }
+                // LD (a16),A
+                0xEA -> {
+                    val addr = nextOpcode() + nextOpcode() * 0x100
+                    mem[addr] = a
+                }
+                // CP d8
+                0xFE -> {
+                    // CP A with n
+                    val tmp = a - nextOpcode()
+                    f = if (tmp == 0) {
+                        f or 0b10000000
+                    } else {
+                        f and (0x01 shl 7).inv()
+                    }
+                }
+                // LD A,E
+                0x7B -> {
+                    a = e
+                }
+                // INC DE
+                0x13 -> {
+                    val et = e + 0x01
+                    e = et % 0x100
+                    d += if (et >= 0x100) 0x01 else 0x00
+                }
                 // RET
                 0xC9 -> {
                     // dump()
