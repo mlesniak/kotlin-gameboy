@@ -1,7 +1,6 @@
 package com.mlesniak.gameboy
 
 import com.mlesniak.gameboy.debug.Debug
-import com.mlesniak.gameboy.debug.clamp
 import com.mlesniak.gameboy.debug.hex
 import java.nio.file.Files
 import java.nio.file.Path
@@ -15,10 +14,14 @@ class CPU {
     // i.e. there is also a lot of memory-mapped
     // IO at specific address ranges, e.g. for
     // video and sound.
+    //
+    // 16 bit values are stored in little endian,
+    // i.e. the lower byte is first.
     private val mem = UByteArray(MEMORY_SIZE.toInt())
 
     // Registers.
     private var pc = 0x0000.toUInt()
+    private var sp = 0x0000.toUInt()
 
     init {
         // Load ROM code into 0x00..0xFF. This is
@@ -33,12 +36,31 @@ class CPU {
     // and sound has been played), the actual cartridge
     // is executed (which we don't plan to implement).
     fun boot() {
-        execute()
+        while (true) {
+            executeNextInstruction()
+        }
     }
 
     // The main simulation loop.
-    private fun execute() {
+    //
+    // TODO(mlesniak) Think about more stateless design!
+    // REMARK This is not very stateless, but then again, a
+    //        CPU is not very stateless per definition.
+    //
+    //        Alternatively we can think of passing a register
+    //        data class to execute a single instructions,
+    //        making tests, etc. way easier.
+    private fun executeNextInstruction() {
         when (val opcode = nextOpcode()) {
+            // LD SP,d16
+            // TODO(mlesniak) UByte vs Byte -- we have to do a lot of
+            //                this annoying conversions here.
+            0x31.toUByte() -> {
+                val n1 = nextOpcode()
+                val n2 = nextOpcode()
+                sp = fromLittleEndian(n1, n2)
+            }
+
             else -> {
                 pc--
                 println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
@@ -51,11 +73,16 @@ class CPU {
         }
     }
 
+    private fun fromLittleEndian(n1: UByte, n2: UByte): UInt {
+        return n2.toUInt() * 0x100.toUInt() + n1.toUInt()
+    }
+
     // Dump all registers and byte content around PC.
     private fun dump() {
         println(
             """
             PC ${pc.hex(4)}
+            SP ${sp.hex(4)}
         """.trimIndent()
         )
         val start = (if (pc < 0x10.toUByte()) 0.toUInt() else pc - 0x10.toUByte()).toInt()
