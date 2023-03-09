@@ -1,17 +1,24 @@
 package com.mlesniak.gameboy
 
+import com.mlesniak.gameboy.debug.Debug
+import com.mlesniak.gameboy.debug.clamp
+import com.mlesniak.gameboy.debug.hex
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.system.exitProcess
 
 class CPU {
+    private val MEMORY_SIZE = 0xFFFF.toUInt()
+    private val ROM_PATH = Path.of("rom/boot.gb")
+
     // Note that not everything is real memory,
     // i.e. there is also a lot of memory-mapped
     // IO at specific address ranges, e.g. for
     // video and sound.
-    private val MEMORY_SIZE = 0xFFFF
-    private val ROM_PATH = Path.of("rom/boot.gb")
+    private val mem = UByteArray(MEMORY_SIZE.toInt())
 
-    private val mem = UByteArray(MEMORY_SIZE)
+    // Registers.
+    private var pc = 0x0000.toUInt()
 
     init {
         // Load ROM code into 0x00..0xFF. This is
@@ -26,8 +33,30 @@ class CPU {
     // and sound has been played), the actual cartridge
     // is executed (which we don't plan to implement).
     fun boot() {
-        Debug.hexdump(mem, 0x00..0xFF)
-        showLogo()
+        execute()
+    }
+
+    // The main simulation loop.
+    private fun execute() {
+        when (val opcode = nextOpcode()) {
+            else -> {
+                pc--
+                println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
+                Debug.hexdump(mem, pc.toInt()..pc.clamp(pc, MEMORY_SIZE).toInt())
+                // An exception just adds boilerplate output and is not helpful
+                // since we control the call hierarchy completely, i.e. a stack
+                // trace does not provide additional information anyway.
+                exitProcess(1)
+            }
+        }
+    }
+
+    // Retrieve the next opcode from memory
+    // and adjust PC.
+    private fun nextOpcode(): UByte {
+        val opcode = mem[pc.toInt()]
+        pc++
+        return opcode
     }
 
     // The manufacturer logo is stored in 0xA8..0xD8 in 1bpp format.

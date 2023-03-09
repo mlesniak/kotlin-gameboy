@@ -1,5 +1,6 @@
-package com.mlesniak.gameboy
+package com.mlesniak.gameboy.debug
 
+import kotlin.math.max
 import kotlin.math.min
 
 object Debug {
@@ -28,3 +29,4 @@ object Debug {
         }
     }
 }
+
