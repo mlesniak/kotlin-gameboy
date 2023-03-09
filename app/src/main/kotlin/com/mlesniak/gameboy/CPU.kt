@@ -2,8 +2,6 @@ package com.mlesniak.gameboy
 
 import java.lang.Integer.max
 import java.lang.Integer.min
-import kotlin.experimental.inv
-import kotlin.system.exitProcess
 
 // Let's start as simple as possible.
 class CPU(
@@ -49,6 +47,10 @@ class CPU(
             // print("?")
             // readLine()
             when (val opcode = nextOpcode()) {
+                // LD A,H
+                0x7C -> {
+                    // TODO(mlesniak) Add this next :)
+                }
                 // INC H
                 0x24 -> {
                     hl = (hl / 0x100 + 1)  * 0x100 + hl % 0x100
