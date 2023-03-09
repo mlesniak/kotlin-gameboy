@@ -42,13 +42,25 @@ class CPU {
             else -> {
                 pc--
                 println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
-                Debug.hexdump(mem, pc.toInt()..pc.clamp(pc, MEMORY_SIZE).toInt())
+                dump()
                 // An exception just adds boilerplate output and is not helpful
                 // since we control the call hierarchy completely, i.e. a stack
                 // trace does not provide additional information anyway.
                 exitProcess(1)
             }
         }
+    }
+
+    // Dump all registers and byte content around PC.
+    private fun dump() {
+        println(
+            """
+            PC ${pc.hex(4)}
+        """.trimIndent()
+        )
+        val start = (if (pc < 0x10.toUByte()) 0.toUInt() else pc - 0x10.toUByte()).toInt()
+        val end = (if (pc + 0x10.toUByte() > MEMORY_SIZE) MEMORY_SIZE else pc + 0x10.toUInt()).toInt()
+        Debug.hexdump(mem, start..end)
     }
 
     // Retrieve the next opcode from memory
