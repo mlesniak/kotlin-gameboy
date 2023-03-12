@@ -2,6 +2,7 @@ package com.mlesniak.gameboy
 
 import com.mlesniak.gameboy.debug.Debug
 import com.mlesniak.gameboy.debug.hex
+import com.mlesniak.gameboy.debug.num
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.exitProcess
@@ -25,6 +26,13 @@ class CPU {
     // Registers.
     private var pc = 0x0000
     private var sp = 0x0000
+    private var a: Byte = 0x00
+
+    // Flags
+    private var z = false // Zero
+    private var n = false // Subtraction
+    private var h = false // Half-Carry
+    private var c = false // Carry
 
     init {
         // Load ROM code into 0x00..0xFF. This is
@@ -46,9 +54,19 @@ class CPU {
 
     // The main simulation loop.
     private fun executeNextInstruction() {
-        when (val opcode = nextOpcode()) {
+        when (val opcode = nextOpcode().toUByte().toInt()) {
+            // XOR A
+            // Z 0 0 0
+            0xAF -> {
+                a = 0
+                z = true
+                n = false
+                h = false
+                c = false
+            }
+
             // LD SP,d16
-            0x31.toByte() -> {
+            0x31 -> {
                 val n1 = nextNumber()
                 val n2 = nextNumber()
                 sp = fromLittleEndian(n1, n2)
@@ -74,8 +92,9 @@ class CPU {
     private fun dump() {
         println(
             """
-            PC ${pc.hex(4)}
-            SP ${sp.hex(4)}
+            PC=${pc.hex(4)} SP=${sp.hex(4)}
+            A=${a.hex(2)}
+            Z${z.num()} N${n.num()} H${h.num()} C${c.num()}
         """.trimIndent()
         )
         val start = (if (pc < 0x10) 0 else pc - 0x10).toInt()
@@ -99,7 +118,6 @@ class CPU {
         pc++
         return number
     }
-
 
     // The manufacturer logo is stored in 0xA8..0xD8 in 1bpp format.
     //
@@ -144,3 +162,4 @@ class CPU {
         }
     }
 }
+
