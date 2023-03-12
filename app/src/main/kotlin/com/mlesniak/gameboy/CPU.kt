@@ -23,16 +23,21 @@ class CPU {
     // i.e. the lower byte is first.
     private val mem = ByteArray(MEMORY_SIZE)
 
-    // Registers.
+    // Registers
     private var pc = 0x0000
     private var sp = 0x0000
     private var a: Byte = 0x00
+    private var h: Byte = 0x00
+    private var l: Byte = 0x00
 
     // Flags
-    private var z = false // Zero
-    private var n = false // Subtraction
-    private var h = false // Half-Carry
-    private var c = false // Carry
+    // There is also register f, which we haven't used
+    // yet, where the first four bytes mirror this flags.
+    // We might need to refactor it later.
+    private var rz = false // Zero
+    private var rn = false // Subtraction
+    private var rh = false // Half-Carry
+    private var rc = false // Carry
 
     init {
         // Load ROM code into 0x00..0xFF. This is
@@ -55,14 +60,20 @@ class CPU {
     // The main simulation loop.
     private fun executeNextInstruction() {
         when (val opcode = nextOpcode().toUByte().toInt()) {
+            // LD HL,d16
+            0x21 -> {
+                l = nextNumber().toByte()
+                h = nextNumber().toByte()
+            }
+
             // XOR A
             // Z 0 0 0
             0xAF -> {
                 a = 0
-                z = true
-                n = false
-                h = false
-                c = false
+                rz = true
+                rn = false
+                rh = false
+                rc = false
             }
 
             // LD SP,d16
@@ -93,8 +104,8 @@ class CPU {
         println(
             """
             PC=${pc.hex(4)} SP=${sp.hex(4)}
-            A=${a.hex(2)}
-            Z${z.num()} N${n.num()} H${h.num()} C${c.num()}
+            A=${a.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
+            Z${rz.num()} N${rn.num()} H${rh.num()} C${rc.num()}
         """.trimIndent()
         )
         val start = (if (pc < 0x10) 0 else pc - 0x10).toInt()
