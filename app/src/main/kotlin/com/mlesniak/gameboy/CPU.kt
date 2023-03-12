@@ -59,11 +59,11 @@ class CPU {
 
     // The main simulation loop.
     private fun executeNextInstruction() {
-        when (val opcode = nextOpcode().toUByte().toInt()) {
+        when (val opcode = nextByte().toUByte().toInt()) {
             // LD HL,d16
             0x21 -> {
-                l = nextNumber().toByte()
-                h = nextNumber().toByte()
+                l = nextByte()
+                h = nextByte()
             }
 
             // XOR A
@@ -115,7 +115,7 @@ class CPU {
 
     // Retrieve the next opcode from memory
     // and adjust PC.
-    private fun nextOpcode(): Byte {
+    private fun nextByte(): Byte {
         val opcode = mem[pc]
         pc++
         return opcode
