@@ -6,8 +6,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.exitProcess
 
+// Design decision: We don't use unsigned values since it involves a
+// lot of annoying castings. Instead, we use normal (signed) values
+// and take care to handle correct sign computation when necessary.
 class CPU {
-    private val MEMORY_SIZE = 0xFFFF.toUInt()
+    private val MEMORY_SIZE = 0xFFFF
     private val ROM_PATH = Path.of("rom/boot.gb")
 
     // Note that not everything is real memory,
@@ -17,17 +20,17 @@ class CPU {
     //
     // 16 bit values are stored in little endian,
     // i.e. the lower byte is first.
-    private val mem = UByteArray(MEMORY_SIZE.toInt())
+    private val mem = ByteArray(MEMORY_SIZE)
 
     // Registers.
-    private var pc = 0x0000.toUInt()
-    private var sp = 0x0000.toUInt()
+    private var pc = 0x0000
+    private var sp = 0x0000
 
     init {
         // Load ROM code into 0x00..0xFF. This is
         // static and independent of the actual
         // cartridge.
-        val rom = Files.readAllBytes(ROM_PATH).toUByteArray()
+        val rom = Files.readAllBytes(ROM_PATH)
         rom.copyInto(mem, 0x0000)
     }
 
@@ -42,22 +45,12 @@ class CPU {
     }
 
     // The main simulation loop.
-    //
-    // TODO(mlesniak) Think about more stateless design!
-    // REMARK This is not very stateless, but then again, a
-    //        CPU is not very stateless per definition.
-    //
-    //        Alternatively we can think of passing a register
-    //        data class to execute a single instructions,
-    //        making tests, etc. way easier.
     private fun executeNextInstruction() {
         when (val opcode = nextOpcode()) {
             // LD SP,d16
-            // TODO(mlesniak) UByte vs Byte -- we have to do a lot of
-            //                this annoying conversions here.
-            0x31.toUByte() -> {
-                val n1 = nextOpcode()
-                val n2 = nextOpcode()
+            0x31.toByte() -> {
+                val n1 = nextNumber()
+                val n2 = nextNumber()
                 sp = fromLittleEndian(n1, n2)
             }
 
@@ -73,8 +66,8 @@ class CPU {
         }
     }
 
-    private fun fromLittleEndian(n1: UByte, n2: UByte): UInt {
-        return n2.toUInt() * 0x100.toUInt() + n1.toUInt()
+    private fun fromLittleEndian(n1: Int, n2: Int): Int {
+        return n2 * 0x100 + n1
     }
 
     // Dump all registers and byte content around PC.
@@ -85,18 +78,28 @@ class CPU {
             SP ${sp.hex(4)}
         """.trimIndent()
         )
-        val start = (if (pc < 0x10.toUByte()) 0.toUInt() else pc - 0x10.toUByte()).toInt()
-        val end = (if (pc + 0x10.toUByte() > MEMORY_SIZE) MEMORY_SIZE else pc + 0x10.toUInt()).toInt()
+        val start = (if (pc < 0x10) 0 else pc - 0x10).toInt()
+        val end = (if (pc + 0x10.toByte() > MEMORY_SIZE) MEMORY_SIZE else pc + 0x10).toInt()
         Debug.hexdump(mem, start..end)
     }
 
     // Retrieve the next opcode from memory
     // and adjust PC.
-    private fun nextOpcode(): UByte {
-        val opcode = mem[pc.toInt()]
+    private fun nextOpcode(): Byte {
+        val opcode = mem[pc]
         pc++
         return opcode
     }
+
+    // Retrieve the next byte from memory,
+    // interpreted as an unsigned value,
+    // and adjust PC.
+    private fun nextNumber(): Int {
+        val number = mem[pc].toUByte().toInt()
+        pc++
+        return number
+    }
+
 
     // The manufacturer logo is stored in 0xA8..0xD8 in 1bpp format.
     //

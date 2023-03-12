@@ -5,7 +5,7 @@ import kotlin.math.min
 
 object Debug {
     @Suppress("SimplifiableCallChain")
-    fun hexdump(bytes: UByteArray, range: IntRange = 0..bytes.size) {
+    fun hexdump(bytes: ByteArray, range: IntRange = 0..bytes.size) {
         val padding = "%x".format(bytes.size).length * 2
         val bytesPerRow = 16
 
@@ -17,12 +17,12 @@ object Debug {
                 println("$adr")
                 break
             }
-            val hexBytes = row.map { "%02x".format(it.toByte()) }
+            val hexBytes = row.map { "%02x".format(it) }
                 .chunked(bytesPerRow / 2)
                 .map { chunk -> chunk.joinToString(" ") }
                 .joinToString("  ")
             val chars = row
-                .map { c -> if (c.toInt() in visibleChars) "%c".format(c.toByte()) else '.' }
+                .map { c -> if (c.toInt() in visibleChars) "%c".format(c) else '.' }
                 .joinToString("")
 
             println("$adr  $hexBytes  |$chars|")
