@@ -1,10 +1,15 @@
 package com.mlesniak.gameboy
 
+import com.mlesniak.gameboy.CPU.Flag.*
 import com.mlesniak.gameboy.debug.Debug
 import com.mlesniak.gameboy.debug.hex
 import com.mlesniak.gameboy.debug.num
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.FormattableFlags
+import kotlin.experimental.and
+import kotlin.experimental.inv
+import kotlin.experimental.or
 import kotlin.system.exitProcess
 
 // Design decision: We don't use unsigned values since it involves a
@@ -27,17 +32,33 @@ class CPU {
     private var pc = 0x0000
     private var sp = 0x0000
     private var a: Byte = 0x00
+    private var f: Byte = 0x00
     private var h: Byte = 0x00
     private var l: Byte = 0x00
 
-    // Flags
-    // There is also register f, which we haven't used
-    // yet, where the first four bytes mirror this flags.
-    // We might need to refactor it later.
-    private var rz = false // Zero
-    private var rn = false // Subtraction
-    private var rh = false // Half-Carry
-    private var rc = false // Carry
+    // Using the first four bits of register
+    // f to store the values.
+    enum class Flag(val pos: Int) {
+        Zero(7),
+        Subtraction(6),
+        HalfCarry(5),
+        Carry(4);
+    }
+
+    private fun set(vararg flags: Flag) {
+        for (flag in flags) {
+            f = f or (0x01 shl flag.pos).toByte()
+        }
+    }
+
+    private fun unset(vararg flags: Flag) {
+        for (flag in flags) {
+            f = f and (0x01 shl flag.pos).toByte().inv()
+        }
+    }
+
+    private fun isSet(flag: Flag): Boolean =
+        f and (0x01 shl flag.pos).toByte() != 0x00.toByte()
 
     init {
         // Load ROM code into 0x00..0xFF. This is
@@ -70,10 +91,8 @@ class CPU {
             // Z 0 0 0
             0xAF -> {
                 a = 0
-                rz = true
-                rn = false
-                rh = false
-                rc = false
+                set(Zero)
+                unset(Carry, Subtraction, HalfCarry)
             }
 
             // LD SP,d16
@@ -105,7 +124,7 @@ class CPU {
             """
             PC=${pc.hex(4)} SP=${sp.hex(4)}
             A=${a.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
-            Z${rz.num()} N${rn.num()} H${rh.num()} C${rc.num()}
+            Z${isSet(Zero).num()} N${isSet(Subtraction).num()} H${isSet(HalfCarry).num()} C${isSet(Carry).num()}
         """.trimIndent()
         )
         val start = (if (pc < 0x10) 0 else pc - 0x10).toInt()
@@ -173,4 +192,3 @@ class CPU {
         }
     }
 }
-
