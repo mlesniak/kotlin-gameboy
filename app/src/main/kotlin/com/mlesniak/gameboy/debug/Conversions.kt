@@ -16,3 +16,14 @@ fun Boolean.num(): String = if (this) "1" else "0"
 
 fun Byte.testBit(pos: Int): Boolean =
     this and (1 shl pos).toByte() != 0.toByte()
+
+fun decrementBytes(high: Byte, low: Byte): Pair<Byte, Byte> {
+    var nh = high
+    var nl = low.toUByte().toInt() - 1
+    if (nl < 0) {
+        nl = 0x00
+        nh--
+    }
+    return nh to nl.toByte()
+}
+

@@ -2,6 +2,7 @@ package com.mlesniak.gameboy
 
 import com.mlesniak.gameboy.CPU.Flag.*
 import com.mlesniak.gameboy.debug.Debug
+import com.mlesniak.gameboy.debug.decrementBytes
 import com.mlesniak.gameboy.debug.hex
 import com.mlesniak.gameboy.debug.num
 import com.mlesniak.gameboy.debug.testBit
@@ -101,10 +102,40 @@ class CPU {
                     else -> abortWithUnknownOpcode(opcode)
                 }
             }
+            // LD (HL),A
+            0x77 -> {
+                val addr = fromLittleEndian(l, h)
+                mem[addr] = a
+            }
+
+            // INC C
+            0x0C -> {
+                c++
+                if (c == 0x00.toByte()) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                unset(Subtraction)
+                // NOTE Half-carry logic not implemented.
+            }
+
+            // LD ($FF00+C),A or LD (C),A
+            0xE2 -> {
+                val addr = 0xFF00 + c.toUByte().toInt()
+                mem[addr] = a
+            }
+
+            // LD A,d8
+            0x3E -> {
+                a = nextByte()
+            }
+
             // LD C,d8
             0x0E -> {
                 c = nextByte()
             }
+
             // JR NZ,r8
             0x20 -> {
                 val pcDelta = nextByte()
@@ -112,22 +143,13 @@ class CPU {
                     pc += pcDelta
                 }
             }
+
             // LD (HL-),A
             0x32 -> {
                 val addr = fromLittleEndian(l, h)
                 mem[addr] = a
 
-                fun decrementPair(high: Byte, low: Byte): Pair<Byte, Byte> {
-                    var nh = high
-                    var nl = low.toUByte().toInt() - 1
-                    if (nl < 0) {
-                        nl = 0x00
-                        nh--
-                    }
-                    return nh to nl.toByte()
-                }
-
-                val p = decrementPair(h, l)
+                val p = decrementBytes(h, l)
                 h = p.first
                 l = p.second
             }
@@ -172,7 +194,8 @@ class CPU {
     }
 
     // Dump all registers and byte content around PC.
-    private fun dump() {
+    private fun dump(addr: Int? = null) {
+        val dumpStart = addr ?: pc
         println(
             """
             PC=${pc.hex(4)} SP=${sp.hex(4)}
@@ -180,8 +203,8 @@ class CPU {
             Z${isSet(Zero).num()} N${isSet(Subtraction).num()} H${isSet(HalfCarry).num()} C${isSet(Carry).num()}
         """.trimIndent()
         )
-        val start = (if (pc < 0x10) 0 else pc - 0x10).toInt()
-        val end = (if (pc + 0x10.toByte() > MEMORY_SIZE) MEMORY_SIZE else pc + 0x10).toInt()
+        val start = (if (dumpStart < 0x10) 0 else dumpStart - 0x10).toInt()
+        val end = (if (dumpStart + 0x10.toByte() > MEMORY_SIZE) MEMORY_SIZE else dumpStart + 0x10).toInt()
         Debug.hexdump(mem, start..end)
     }
 
