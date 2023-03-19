@@ -4,6 +4,7 @@ import com.mlesniak.gameboy.CPU.Flag.*
 import com.mlesniak.gameboy.debug.Debug
 import com.mlesniak.gameboy.debug.hex
 import com.mlesniak.gameboy.debug.num
+import com.mlesniak.gameboy.debug.testBit
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.experimental.and
@@ -83,8 +84,17 @@ class CPU {
             // Prefix for extended commands
             0xCB -> {
                 when (val opcode = nextByte().toUByte().toInt()) {
+                    // BIT 7,H
+                    0x7C -> {
+                        if (h.testBit(7)) {
+                            unset(Zero)
+                        } else {
+                            set(Zero)
+                        }
+                        unset(Subtraction)
+                        set(HalfCarry)
+                    }
                     else -> abortWithUnknownOpcode(opcode)
-
                 }
             }
             // LD (HL-),A
@@ -197,3 +207,4 @@ class CPU {
         }
     }
 }
+
