@@ -80,10 +80,17 @@ class CPU {
     // The main simulation loop.
     private fun executeNextInstruction() {
         when (val opcode = nextByte().toUByte().toInt()) {
+            // Prefix for extended commands
+            0xCB -> {
+                when (val opcode = nextByte().toUByte().toInt()) {
+                    else -> abortWithUnknownOpcode(opcode)
+
+                }
+            }
             // LD (HL-),A
             0x32 -> {
                 val addr = fromLittleEndian(l, h)
-                mem[addr]= a
+                mem[addr] = a
             }
 
             // LD HL,d16
@@ -107,16 +114,18 @@ class CPU {
                 sp = fromLittleEndian(n1, n2)
             }
 
-            else -> {
-                pc--
-                println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
-                dump()
-                // An exception just adds boilerplate output and is not helpful
-                // since we control the call hierarchy completely, i.e. a stack
-                // trace does not provide additional information anyway.
-                exitProcess(1)
-            }
+            else -> abortWithUnknownOpcode(opcode)
         }
+    }
+
+    private fun abortWithUnknownOpcode(opcode: Int) {
+        pc--
+        println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
+        dump()
+        // An exception just adds boilerplate output and is not helpful
+        // since we control the call hierarchy completely, i.e. a stack
+        // trace does not provide additional information anyway.
+        exitProcess(1)
     }
 
     private fun fromLittleEndian(lowByte: Byte, highByte: Byte): Int {
