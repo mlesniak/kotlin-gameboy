@@ -6,7 +6,6 @@ import com.mlesniak.gameboy.debug.hex
 import com.mlesniak.gameboy.debug.num
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.FormattableFlags
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
@@ -81,6 +80,12 @@ class CPU {
     // The main simulation loop.
     private fun executeNextInstruction() {
         when (val opcode = nextByte().toUByte().toInt()) {
+            // LD (HL-),A
+            0x32 -> {
+                val addr = fromLittleEndian(l, h)
+                mem[addr]= a
+            }
+
             // LD HL,d16
             0x21 -> {
                 l = nextByte()
@@ -97,8 +102,8 @@ class CPU {
 
             // LD SP,d16
             0x31 -> {
-                val n1 = nextNumber()
-                val n2 = nextNumber()
+                val n1 = nextByte()
+                val n2 = nextByte()
                 sp = fromLittleEndian(n1, n2)
             }
 
@@ -114,8 +119,8 @@ class CPU {
         }
     }
 
-    private fun fromLittleEndian(n1: Int, n2: Int): Int {
-        return n2 * 0x100 + n1
+    private fun fromLittleEndian(lowByte: Byte, highByte: Byte): Int {
+        return highByte.toUByte().toInt() * 0x100 + lowByte.toUByte().toInt()
     }
 
     // Dump all registers and byte content around PC.
@@ -138,15 +143,6 @@ class CPU {
         val opcode = mem[pc]
         pc++
         return opcode
-    }
-
-    // Retrieve the next byte from memory,
-    // interpreted as an unsigned value,
-    // and adjust PC.
-    private fun nextNumber(): Int {
-        val number = mem[pc].toUByte().toInt()
-        pc++
-        return number
     }
 
     // The manufacturer logo is stored in 0xA8..0xD8 in 1bpp format.
