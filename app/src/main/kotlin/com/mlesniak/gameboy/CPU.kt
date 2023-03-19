@@ -34,6 +34,8 @@ class CPU {
     private var sp = 0x0000
     private var a: Byte = 0x00
     private var c: Byte = 0x00
+    private var d: Byte = 0x00
+    private var e: Byte = 0x00
     private var f: Byte = 0x00
     private var h: Byte = 0x00
     private var l: Byte = 0x00
@@ -102,6 +104,25 @@ class CPU {
                     else -> abortWithUnknownOpcode(opcode)
                 }
             }
+
+            // LD A,(DE)
+            0x1A -> {
+                val addr = fromLittleEndian(e, d)
+                a = mem[addr]
+            }
+
+            // LD DE,d16
+            0x11 -> {
+                e = nextByte()
+                d = nextByte()
+            }
+
+            // LD ($FF00+a8),A or LDH (a8),A
+            0xE0 -> {
+                val addr = 0xFF00 + nextByte().toUByte().toInt()
+                mem[addr] = a
+            }
+
             // LD (HL),A
             0x77 -> {
                 val addr = fromLittleEndian(l, h)
@@ -199,7 +220,7 @@ class CPU {
         println(
             """
             PC=${pc.hex(4)} SP=${sp.hex(4)}
-            A=${a.hex(2)} C=${c.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
+            A=${a.hex(2)} C=${c.hex(2)} D=${d.hex(2)} E=${e.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
             Z${isSet(Zero).num()} N${isSet(Subtraction).num()} H${isSet(HalfCarry).num()} C${isSet(Carry).num()}
         """.trimIndent()
         )
