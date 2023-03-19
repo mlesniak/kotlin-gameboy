@@ -88,9 +88,12 @@ class CPU {
     }
 
     // The main simulation loop.
+    @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
-        // println("\n" + "-".repeat(78))
-        // dump()
+        // if (pc > 0x0095) {
+        //     println("\n" + "-".repeat(78))
+        //     dump()
+        // }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -125,6 +128,30 @@ class CPU {
 
                     else -> abortWithUnknownOpcode(opcode)
                 }
+            }
+
+            // POP BC
+            0xC1 -> {
+                b = mem[sp+1]
+                c = mem[sp+2]
+                sp += 2
+            }
+
+            // RLA
+            0x17 -> {
+                val an = (a.toIgnoredSignInt() shl 1).toByte()
+                if (an == 0x00.toByte()) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                if (a.testBit(7)) {
+                    set(Carry)
+                } else {
+                    unset(Carry)
+                }
+                unset(Subtraction, HalfCarry)
+                a = an
             }
 
             // PUSH BC
