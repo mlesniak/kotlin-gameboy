@@ -80,6 +80,8 @@ class CPU {
 
     // The main simulation loop.
     private fun executeNextInstruction() {
+        // println("\n" + "-".repeat(78))
+        // dump()
         when (val opcode = nextByte().toUByte().toInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -87,20 +89,42 @@ class CPU {
                     // BIT 7,H
                     0x7C -> {
                         if (h.testBit(7)) {
-                            unset(Zero)
-                        } else {
                             set(Zero)
+                        } else {
+                            unset(Zero)
                         }
                         unset(Subtraction)
                         set(HalfCarry)
                     }
+
                     else -> abortWithUnknownOpcode(opcode)
+                }
+            }
+            // JR NZ,r8
+            0x20 -> {
+                val pcDelta = nextByte()
+                if (isSet(Zero)) {
+                    pc += pcDelta
                 }
             }
             // LD (HL-),A
             0x32 -> {
                 val addr = fromLittleEndian(l, h)
                 mem[addr] = a
+
+                fun decrementPair(high: Byte, low: Byte): Pair<Byte, Byte> {
+                    var nh = high
+                    var nl = low.toUByte().toInt() - 1
+                    if (nl < 0) {
+                        nl = 0x00
+                        nh--
+                    }
+                    return nh to nl.toByte()
+                }
+
+                val p = decrementPair(h, l)
+                h = p.first
+                l = p.second
             }
 
             // LD HL,d16
