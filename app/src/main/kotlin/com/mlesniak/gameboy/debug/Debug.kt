@@ -3,6 +3,8 @@ package com.mlesniak.gameboy.debug
 import kotlin.math.max
 import kotlin.math.min
 
+// TODO(mlesniak) Does not add enough spaces at the end of the array before printable
+//                chars are shown.
 object Debug {
     @Suppress("SimplifiableCallChain")
     fun hexdump(bytes: ByteArray, range: IntRange = 0..bytes.size) {

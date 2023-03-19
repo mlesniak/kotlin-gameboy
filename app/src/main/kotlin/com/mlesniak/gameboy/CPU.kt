@@ -6,6 +6,7 @@ import com.mlesniak.gameboy.debug.decrementBytes
 import com.mlesniak.gameboy.debug.hex
 import com.mlesniak.gameboy.debug.num
 import com.mlesniak.gameboy.debug.testBit
+import com.mlesniak.gameboy.debug.toIgnoredSignInt
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.experimental.and
@@ -86,10 +87,10 @@ class CPU {
     private fun executeNextInstruction() {
         // println("\n" + "-".repeat(78))
         // dump()
-        when (val opcode = nextByte().toUByte().toInt()) {
+        when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
-                when (val opcode = nextByte().toUByte().toInt()) {
+                when (val opcode = nextByte().toIgnoredSignInt()) {
                     // BIT 7,H
                     0x7C -> {
                         if (h.testBit(7)) {
@@ -103,6 +104,15 @@ class CPU {
 
                     else -> abortWithUnknownOpcode(opcode)
                 }
+            }
+
+            // CALL a16
+            0xCD -> {
+                val addr = nextByte().toIgnoredSignInt() + nextByte().toIgnoredSignInt() * 0x100
+                mem[sp] = (pc / 0x100).toUByte().toByte()
+                mem[sp - 1] = (pc % 0x100).toUByte().toByte()
+                sp -= 2
+                pc = addr
             }
 
             // LD A,(DE)
@@ -119,7 +129,7 @@ class CPU {
 
             // LD ($FF00+a8),A or LDH (a8),A
             0xE0 -> {
-                val addr = 0xFF00 + nextByte().toUByte().toInt()
+                val addr = 0xFF00 + nextByte().toIgnoredSignInt()
                 mem[addr] = a
             }
 
@@ -143,7 +153,7 @@ class CPU {
 
             // LD ($FF00+C),A or LD (C),A
             0xE2 -> {
-                val addr = 0xFF00 + c.toUByte().toInt()
+                val addr = 0xFF00 + c.toIgnoredSignInt()
                 mem[addr] = a
             }
 
@@ -211,7 +221,7 @@ class CPU {
     }
 
     private fun fromLittleEndian(lowByte: Byte, highByte: Byte): Int {
-        return highByte.toUByte().toInt() * 0x100 + lowByte.toUByte().toInt()
+        return highByte.toIgnoredSignInt() * 0x100 + lowByte.toIgnoredSignInt()
     }
 
     // Dump all registers and byte content around PC.
@@ -280,4 +290,3 @@ class CPU {
         }
     }
 }
-

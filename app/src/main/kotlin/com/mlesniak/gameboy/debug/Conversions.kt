@@ -27,3 +27,5 @@ fun decrementBytes(high: Byte, low: Byte): Pair<Byte, Byte> {
     return nh to nl.toByte()
 }
 
+// Do we need a better name since it overrides the normal toInt method?
+fun Byte.toIgnoredSignInt(): Int = this.toUByte().toInt()
