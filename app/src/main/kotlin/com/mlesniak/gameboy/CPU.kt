@@ -32,6 +32,7 @@ class CPU {
     private var pc = 0x0000
     private var sp = 0x0000
     private var a: Byte = 0x00
+    private var c: Byte = 0x00
     private var f: Byte = 0x00
     private var h: Byte = 0x00
     private var l: Byte = 0x00
@@ -99,6 +100,10 @@ class CPU {
 
                     else -> abortWithUnknownOpcode(opcode)
                 }
+            }
+            // LD C,d8
+            0x0E -> {
+                c = nextByte()
             }
             // JR NZ,r8
             0x20 -> {
@@ -171,7 +176,7 @@ class CPU {
         println(
             """
             PC=${pc.hex(4)} SP=${sp.hex(4)}
-            A=${a.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
+            A=${a.hex(2)} C=${c.hex(2)} H=${h.hex(2)} L=${l.hex(2)}
             Z${isSet(Zero).num()} N${isSet(Subtraction).num()} H${isSet(HalfCarry).num()} C${isSet(Carry).num()}
         """.trimIndent()
         )
