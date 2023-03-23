@@ -133,6 +133,35 @@ class CPU {
                 }
             }
 
+            // LD H,A
+            0x67 -> {
+                h = a
+            }
+
+            // JR r8
+            0x18 -> {
+                var delta = nextByte()
+                pc += delta
+            }
+
+            // LD L,d8
+            0x2E -> {
+                l = nextByte()
+            }
+
+            // DEC C
+            0x0D -> {
+                val ct = c.toUByte().toInt() - 1
+                if (ct == 0) {
+                    c = 0
+                    set(Zero)
+                } else {
+                    c = ct.toByte()
+                    unset(Zero)
+                }
+                set(Subtraction)
+            }
+
             // JR Z,r8
             0x28 -> {
                 val pcDelta = nextByte()
