@@ -133,6 +133,20 @@ class CPU {
                 }
             }
 
+            // INC DE
+            0x13 -> {
+                val p = incrementBytes(d, e)
+                e = p.first
+                d = p.second
+            }
+
+            // RET
+            0xC9 -> {
+                val addr = mem[sp+1].toIgnoredSignInt() + mem[sp+2].toIgnoredSignInt() * 0x100
+                sp += 2
+                pc = addr
+            }
+
             // INC HL
             0x23 -> {
                 val p = incrementBytes(h, l)
