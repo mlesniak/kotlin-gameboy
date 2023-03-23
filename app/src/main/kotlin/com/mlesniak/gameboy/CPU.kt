@@ -133,6 +133,55 @@ class CPU {
                 }
             }
 
+            // JR Z,r8
+            0x28 -> {
+                val pcDelta = nextByte()
+                if (isSet(Zero)) {
+                    pc += pcDelta
+                }
+            }
+
+            // DEC A
+            0x3D -> {
+                val at = a.toUByte().toInt() - 1
+                if (at == 0) {
+                    a = 0
+                    set(Zero)
+                } else {
+                    a = at.toByte()
+                    unset(Zero)
+                }
+                set(Subtraction)
+            }
+
+            // LD (a16),A
+            0xEA -> {
+                val addr = nextByte().toIgnoredSignInt() + nextByte().toIgnoredSignInt() * 0x100
+                mem[addr] = a
+            }
+
+            // CP d8
+            // Ignore half-carry bit for now.
+            0xFE -> {
+                val r = a.toIgnoredSignInt() - nextByte().toIgnoredSignInt()
+                if (r == 0) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                if (r < 0) {
+                    set(Carry)
+                } else {
+                    unset(Carry)
+                }
+                set(Subtraction)
+            }
+
+            // LD A,E
+            0x7B -> {
+                a = e
+            }
+
             // INC DE
             0x13 -> {
                 val p = incrementBytes(d, e)
