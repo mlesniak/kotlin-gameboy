@@ -133,6 +133,47 @@ class CPU {
                 }
             }
 
+            // LDH A,(a8) or LD A,($FF00+a8)
+            0xF0 -> {
+                // Cheating here until we have a graphics routine:
+                //
+                // Addr_0064:
+                // LD A,($FF00+$44)	; $0064  wait for screen frame
+                // CP $90		    ; $0066
+                // JR NZ, Addr_0064	; $0068
+                //
+                // Unless we manually set 0xFF44 to 90, this will be
+                // an infinite loop. Since we have no graphical
+                // subsystem yet, let's set the value for now and
+                // see later, what happens.
+                mem[0xFF44] = 0x90.toByte()
+
+                val addr = 0xFF00 + nextByte().toIgnoredSignInt()
+                a = mem[addr]
+            }
+
+            // LD E,d8
+            0x1E -> {
+                e = nextByte()
+            }
+
+            // INC B
+            // NOTE Half-carry logic not implemented.
+            0x04 -> {
+                b++
+                if (b == 0x00.toByte()) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                unset(Subtraction)
+            }
+
+            // LD D,A
+            0x57 -> {
+                d = a
+            }
+
             // LD H,A
             0x67 -> {
                 h = a
@@ -220,7 +261,7 @@ class CPU {
 
             // RET
             0xC9 -> {
-                val addr = mem[sp+1].toIgnoredSignInt() + mem[sp+2].toIgnoredSignInt() * 0x100
+                val addr = mem[sp + 1].toIgnoredSignInt() + mem[sp + 2].toIgnoredSignInt() * 0x100
                 sp += 2
                 pc = addr
             }
