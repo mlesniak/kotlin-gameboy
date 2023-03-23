@@ -7,6 +7,7 @@ import com.mlesniak.gameboy.CPU.Flag.Zero
 import com.mlesniak.gameboy.debug.Debug
 import com.mlesniak.gameboy.debug.decrementBytes
 import com.mlesniak.gameboy.debug.hex
+import com.mlesniak.gameboy.debug.incrementBytes
 import com.mlesniak.gameboy.debug.num
 import com.mlesniak.gameboy.debug.testBit
 import com.mlesniak.gameboy.debug.toIgnoredSignInt
@@ -132,13 +133,30 @@ class CPU {
                 }
             }
 
+            // INC HL
+            0x23 -> {
+                val p = incrementBytes(h, l)
+                h = p.first
+                l = p.second
+            }
+
+            // LD (HL+),A
+            0x22 -> {
+                val addr = fromLittleEndian(l, h)
+                mem[addr] = a
+
+                val p = incrementBytes(h, l)
+                h = p.first
+                l = p.second
+            }
+
             // DEC B
             // Ignoring Half-Carry flag for now.
             0x05 -> {
                 val bt = b.toUByte().toInt() - 1
                 if (bt == 0) {
-                   b = 0
-                   set(Zero)
+                    b = 0
+                    set(Zero)
                 } else {
                     b = bt.toByte()
                     unset(Zero)
@@ -148,8 +166,8 @@ class CPU {
 
             // POP BC
             0xC1 -> {
-                b = mem[sp+1]
-                c = mem[sp+2]
+                b = mem[sp + 1]
+                c = mem[sp + 2]
                 sp += 2
             }
 
