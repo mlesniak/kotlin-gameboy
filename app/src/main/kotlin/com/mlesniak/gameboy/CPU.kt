@@ -69,6 +69,8 @@ class CPU {
     private fun isSet(flag: Flag): Boolean =
         f and (0x01 shl flag.pos).toByte() != 0x00.toByte()
 
+    private fun isNotSet(flag: Flag): Boolean = !isSet(flag)
+
     init {
         // Load ROM code into 0x00..0xFF. This is
         // static and independent of the actual
@@ -128,6 +130,20 @@ class CPU {
 
                     else -> abortWithUnknownOpcode(opcode)
                 }
+            }
+
+            // DEC B
+            // Ignoring Half-Carry flag for now.
+            0x05 -> {
+                val bt = b.toUByte().toInt() - 1
+                if (bt == 0) {
+                   b = 0
+                   set(Zero)
+                } else {
+                    b = bt.toByte()
+                    unset(Zero)
+                }
+                set(Subtraction)
             }
 
             // POP BC
@@ -235,7 +251,7 @@ class CPU {
             // JR NZ,r8
             0x20 -> {
                 val pcDelta = nextByte()
-                if (isSet(Zero)) {
+                if (isNotSet(Zero)) {
                     pc += pcDelta
                 }
             }
