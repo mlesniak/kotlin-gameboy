@@ -93,10 +93,10 @@ class CPU {
     // The main simulation loop.
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
-        // if (pc > 0x0095) {
-        //     println("\n" + "-".repeat(78))
-        //     dump()
-        // }
+        if (pc > 0x00E7) {
+            println("\n" + "-".repeat(78))
+            dump()
+        }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -131,6 +131,83 @@ class CPU {
 
                     else -> abortWithUnknownOpcode(opcode)
                 }
+            }
+
+            // CP (HL)
+            0xBE -> {
+                val addr = fromLittleEndian(l, h)
+                val r = a.toIgnoredSignInt() - mem[addr]
+                if (r == 0) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                if (r < 0) {
+                    set(Carry)
+                } else {
+                    unset(Carry)
+                }
+                set(Subtraction)
+            }
+
+            // LD D,d8
+            0x16 -> {
+                d = nextByte()
+            }
+
+            // DEC D
+            0x15 -> {
+                val dt = d.toUByte().toInt() - 1
+                if (dt == 0) {
+                    d = 0
+                    set(Zero)
+                } else {
+                    d = dt.toByte()
+                    unset(Zero)
+                }
+                set(Subtraction)
+            }
+
+            // SUB B
+            // Not setting carry and half-carry for now.
+            0x90 -> {
+                val r = (a.toUByte() - b.toUByte()).toInt()
+                if (r == 0) {
+                   set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                set(Subtraction)
+            }
+
+            // LD A,H
+            0x7C -> {
+                a = h
+            }
+
+            // INC H
+            // NOTE Half-carry logic not implemented.
+            0x24 -> {
+                h++
+                if (h == 0x00.toByte()) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                unset(Subtraction)
+            }
+
+            // DEC E
+            0x1D -> {
+                val et = e.toUByte().toInt() - 1
+                if (et == 0) {
+                    e = 0
+                    set(Zero)
+                } else {
+                    e = et.toByte()
+                    unset(Zero)
+                }
+                set(Subtraction)
             }
 
             // LDH A,(a8) or LD A,($FF00+a8)
