@@ -111,6 +111,7 @@ class CPU(private val cartridge: Path) {
     // The main simulation loop.
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
+        tick++
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
