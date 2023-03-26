@@ -21,7 +21,7 @@ import kotlin.system.exitProcess
 // Design decision: We don't use unsigned values since it involves a
 // lot of annoying castings. Instead, we use normal (signed) values
 // and take care to handle correct sign computation when necessary.
-class CPU {
+class CPU(private val cartridge: Path) {
     private val MEMORY_SIZE = 0xFFFF
     private val ROM_PATH = Path.of("rom/boot.gb")
 
@@ -78,6 +78,20 @@ class CPU {
         // cartridge.
         val rom = Files.readAllBytes(ROM_PATH)
         rom.copyInto(mem, 0x0000)
+
+        // Load cartridge into 0x100... This is necessary
+        // to prevent locking up in 0x00E9 when the rom
+        // logo is compared with the cartridge logo.
+        //
+        // Technically, we cheat here a bit, since we ignore
+        // the first 0x100 bytes when copying into memory.
+        // I'm not sure how this is handled on real hardware,
+        // but we only need the logo data anyway for the
+        // comparison routine of the ROM to not lock up
+        // (as part of the copyright protection patented
+        // by Nintendo).
+        val cartridgeCode = Files.readAllBytes(cartridge)
+        cartridgeCode.copyInto(mem, 0x0100, 0x100)
     }
 
     // Execute the rom code at 0x0000. After the rom code
@@ -93,9 +107,14 @@ class CPU {
     // The main simulation loop.
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
-        if (pc > 0x00E7) {
+        if (pc >= 0x00E6) {
             println("\n" + "-".repeat(78))
             dump()
+            // print("?")
+            // val s = readLine()!!
+            // if (s.isNotBlank()) {
+            //     dump(Integer.parseInt(s, 16))
+            // }
         }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
@@ -133,10 +152,35 @@ class CPU {
                 }
             }
 
+            // ADD A,(HL)
+            // Ignoring carry and half-carry for now.
+            0x86 -> {
+                val addr = fromLittleEndian(l, h)
+                val r = (a.toIgnoredSignInt() + mem[addr]) % 0x100
+                if (r == 0) {
+                    set(Zero)
+                } else {
+                    unset(Zero)
+                }
+                unset(Subtraction)
+                a = r.toByte()
+            }
+
+            // LD A,B
+            0x78 -> {
+                a = b
+            }
+
+            // LD A,L
+            0x7D -> {
+                a = l
+            }
+
             // CP (HL)
             0xBE -> {
                 val addr = fromLittleEndian(l, h)
-                val r = a.toIgnoredSignInt() - mem[addr]
+                val r = (a.toIgnoredSignInt() - mem[addr]) % 0x100
+                println("addr=${addr.hex(4)} r=$r a=$a mem=${mem[addr]}")
                 if (r == 0) {
                     set(Zero)
                 } else {
@@ -307,10 +351,13 @@ class CPU {
                 mem[addr] = a
             }
 
+
             // CP d8
             // Ignore half-carry bit for now.
             0xFE -> {
-                val r = a.toIgnoredSignInt() - nextByte().toIgnoredSignInt()
+                val next = nextByte().toIgnoredSignInt()
+                val r = (a.toIgnoredSignInt() - next) % 0x100
+                println("CP d8: r=$r")
                 if (r == 0) {
                     set(Zero)
                 } else {
@@ -332,8 +379,8 @@ class CPU {
             // INC DE
             0x13 -> {
                 val p = incrementBytes(d, e)
-                e = p.first
-                d = p.second
+                d = p.first
+                e = p.second
             }
 
             // RET
