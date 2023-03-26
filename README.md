@@ -1,8 +1,9 @@
 # Overview
 
-Initial goal: Show the Nintendo title animation when a gameboy boots up [reference video](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro).
-
-
+Initial goal: Show the Nintendo title animation when a gameboy 
+boots up [reference video](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro).
+Note that I've underestimated the complexity of the VRAM logic
+and am not interested in spending time to implement this for now.
 
 ## Current status
 
@@ -18,12 +19,12 @@ Z1 N0 H0 C0
 00000100  00 c3 50 01 ce ed 66 66  cc 0d 00 0b 03 73 00 83  |..P...ff.....s..|
 00000110  00 0c 00 0d 00 08 11 1f  88 89 00 0e dc cc 6e e6  |..............n.|
 ```
-Unfortunately, I would now have to implement the whole VRAM logic and interrupt
-handling (see https://gbdev.gg8.se/wiki/articles/Video_Display#VRAM_Tile_Data), 
+Unfortunately, I would now have to implement the whole VRAM controller logic 
+and interrupt handling (see https://gbdev.gg8.se/wiki/articles/Video_Display), 
 which is seemingly quite cumbersome and not very interesting for now. 
 
 Instead of forcing myself to spend my free time implementing something which
-I find not interesting, I'm spending more time with the other pet projects
+I do not find interesting, I'm spending more time with the other pet projects
 which I'm more interested in for the time being ;-) #YOLO
 
 ## Fun fact
