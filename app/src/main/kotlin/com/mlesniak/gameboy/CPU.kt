@@ -112,6 +112,27 @@ class CPU(private val cartridge: Path) {
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
         tick++
+
+        if (pc in 0x0086..0x008C) {
+            // println(tick)
+            // dump()
+            val scanline = mem[0xFF42]
+            if (scanline != 0x00.toByte()) {
+                println("$tick ${scanline.hex(2)}")
+                // for (y in 0x9800 until 0x9BFF)
+                for (y in 0 until 32) {
+                    for (x in 0 until 32) {
+                        val row = (y + scanline.toIgnoredSignInt()) % 32
+                        val char = mem[0x9800 + x + row * 32]
+                        print(char.toByte())
+                    }
+                    println()
+                }
+                println("-".repeat(40))
+                // readLine()
+            }
+        }
+
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -212,11 +233,12 @@ class CPU(private val cartridge: Path) {
             0x90 -> {
                 val r = (a.toUByte() - b.toUByte()).toInt()
                 if (r == 0) {
-                   set(Zero)
+                    set(Zero)
                 } else {
                     unset(Zero)
                 }
                 set(Subtraction)
+                a = r.toByte()
             }
 
             // LD A,H
@@ -345,7 +367,6 @@ class CPU(private val cartridge: Path) {
                 val addr = nextByte().toIgnoredSignInt() + nextByte().toIgnoredSignInt() * 0x100
                 mem[addr] = a
             }
-
 
             // CP d8
             // Ignore half-carry bit for now.
