@@ -46,6 +46,10 @@ class CPU(private val cartridge: Path) {
     private var h: Byte = 0x00
     private var l: Byte = 0x00
 
+    // Used internally and increment on every parsed
+    // instruction, not part of the CPU.
+    private var tick = 0;
+
     // Using the first four bits of register
     // f to store the values.
     enum class Flag(val pos: Int) {
@@ -107,15 +111,6 @@ class CPU(private val cartridge: Path) {
     // The main simulation loop.
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
-        if (pc >= 0x00E6) {
-            println("\n" + "-".repeat(78))
-            dump()
-            // print("?")
-            // val s = readLine()!!
-            // if (s.isNotBlank()) {
-            //     dump(Integer.parseInt(s, 16))
-            // }
-        }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -180,7 +175,6 @@ class CPU(private val cartridge: Path) {
             0xBE -> {
                 val addr = fromLittleEndian(l, h)
                 val r = (a.toIgnoredSignInt() - mem[addr]) % 0x100
-                println("addr=${addr.hex(4)} r=$r a=$a mem=${mem[addr]}")
                 if (r == 0) {
                     set(Zero)
                 } else {
@@ -357,7 +351,6 @@ class CPU(private val cartridge: Path) {
             0xFE -> {
                 val next = nextByte().toIgnoredSignInt()
                 val r = (a.toIgnoredSignInt() - next) % 0x100
-                println("CP d8: r=$r")
                 if (r == 0) {
                     set(Zero)
                 } else {
@@ -568,7 +561,7 @@ class CPU(private val cartridge: Path) {
 
     private fun abortWithUnknownOpcode(opcode: Int) {
         pc--
-        println("Unknown opcode ${opcode.hex(2)} at position ${pc.hex(4)}")
+        println("Unknown opcode 0x${opcode.hex(2)} at position 0x${pc.hex(4)}")
         dump()
         // An exception just adds boilerplate output and is not helpful
         // since we control the call hierarchy completely, i.e. a stack
