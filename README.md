@@ -1,11 +1,34 @@
 # Overview
 
-Goal: Show the Nintendo title animation when a gameboy boots up [reference video](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro).
+Initial goal: Show the Nintendo title animation when a gameboy boots up [reference video](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro).
+
+
 
 ## Current status
 
-Dump boot rom and show parsed logo. I've started with a prototype to get a feeling how to implement a CPU emulator
-and will now start from scratch knowing what mistakes to prevent, giving me the chance to make some new ones.
+**ABANDONED** -- I've implement all CPU instructions to simulate the necessary CPU instructions from 
+0x00 until 0xFF, i.e. the whole boot rom. The interpreter fails after all of the boot rom has successfully
+been interpreted, i.e. at position 0x100.
+```
+Unknown opcode 0x00 at position 0x0100
+PC=0100 SP=FFFE
+A=01 B=00 C=13 D=00 E=D8 H=01 L=4D
+Z1 N0 H0 C0
+000000F0  f5 06 19 78 86 23 05 20  fb 86 20 fe 3e 01 e0 50  |...x.#. .. .>..P|
+00000100  00 c3 50 01 ce ed 66 66  cc 0d 00 0b 03 73 00 83  |..P...ff.....s..|
+00000110  00 0c 00 0d 00 08 11 1f  88 89 00 0e dc cc 6e e6  |..............n.|
+```
+Unfortunately, I would now have to implement the whole VRAM logic and interrupt
+handling (see https://gbdev.gg8.se/wiki/articles/Video_Display#VRAM_Tile_Data), 
+which is seemingly quite cumbersome and not very interesting for now. 
+
+Instead of forcing myself to spend my free time implementing something which
+I find not interesting, I'm spending more time with the other pet projects
+which I'm more interested in for the time being ;-) #YOLO
+
+## Fun fact
+In `com.mlesniak.gameboy.CPU.showLogo`, I've implement a method to interpret the boot rom logo data and show the
+parsed logo. 
 
 ```
 00000000  31 fe ff af 21 ff 9f 32  cb 7c 20 fb 21 26 ff 0e  |1...!..2.| .!&..|
