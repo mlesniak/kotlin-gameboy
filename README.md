@@ -27,6 +27,27 @@ Instead of forcing myself to spend my free time implementing something which
 I do not find interesting, I'm spending more time with the other pet projects
 which I'm more interested in for the time being ;-) #YOLO
 
+### Some additional notes
+
+(Which might help my memory if I every decide to touch this again...)
+
+Quoting the documentation on the memory IO register [0xFF42](https://gbdev.gg8.se/wiki/articles/Video_Display#FF42_-_SCY_-_Scroll_Y_.28R.2FW.29.2C_FF43_-_SCX_-_Scroll_X_.28R.2FW.29), 
+the Gameboy video controller does not simply map the RAM to the video ram, but
+instead allows to specify the initial scan line (and automatically wraps) around,
+thus allowing scrolling while keeping the tile-indexed contents of memory fixed:
+
+> FF42 - SCY - Scroll Y (R/W), FF43 - SCX - Scroll X (R/W)
+> >
+> Specifies the position in the 256x256 pixels BG map (32x32 tiles) which is to 
+> be displayed at the upper/left LCD display position. Values in range from 0-255 
+> may be used for X/Y each, the video controller automatically wraps back to 
+> the upper (left) position in BG map when drawing exceeds the lower (right) 
+> border of the BG map area.
+
+Hence, it is not sufficient to simply map some bytes from memory to some
+Kotlin-specific graphics library, but one has to simulate additional logic
+to correctly render it, i.e. the starting scanline should be read from `0xFF42`.
+
 ## Fun fact
 In `com.mlesniak.gameboy.CPU.showLogo`, I've implement a method to interpret the boot rom logo data and show the
 parsed logo. 
