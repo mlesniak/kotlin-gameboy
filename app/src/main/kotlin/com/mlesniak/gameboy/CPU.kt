@@ -262,6 +262,8 @@ class CPU(private val cartridge: Path) {
                 // an infinite loop. Since we have no graphical
                 // subsystem yet, let's set the value for now and
                 // see later, what happens.
+                //
+                // See also https://gbdev.gg8.se/wiki/articles/Video_Display#FF44_-_LY_-_LCDC_Y-Coordinate_.28R.29
                 mem[0xFF44] = 0x90.toByte()
 
                 val addr = 0xFF00 + nextByte().toIgnoredSignInt()
