@@ -124,12 +124,11 @@ class Video(val mem: ByteArray) {
                 val aset = (a and tmp) != 0x00.toByte()
                 val bset = (b and tmp) != 0x00.toByte()
                 val n = if (bset) 2 else 0 + if (aset) 1 else 0
-                res[idx][bit] = n
+                res[idx][7-bit] = n
             }
         }
 
-        // Works, but I don't understand way, let's fix this...!
-        return res.map { row -> row.reversed().toTypedArray() }.toTypedArray()
+        return res
     }
 
     /**
