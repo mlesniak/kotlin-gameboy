@@ -23,6 +23,7 @@ class PBM(private val width: Int, private val height: Int) {
         for (row in mem) {
             for (value in row) {
                 sb.append(value)
+                sb.append(' ')
             }
             sb.append('\n')
         }

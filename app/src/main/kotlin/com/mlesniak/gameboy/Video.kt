@@ -65,18 +65,34 @@ class Video(val mem: ByteArray) {
                 // of 16 (0x10) bytes, and we index
                 // into the whole memory map.
                 val tileAddr = 0x8000 + tileIndex * 0x10
+                Debug.hexdump(mem, tileAddr..tileAddr + 0x10)
 
-                // The array value can be in the range 0..3, but
-                // since we render only monochrome, we treat the
-                // values as 0 or 1.
                 val pixels = toPixel(tileAddr)
-
                 pixels.forEach { row ->
-                    row.forEach { v -> print(v)}
+                    row.forEach { v ->
+                        if (v > 0) {
+                            print("#")
+                        } else {
+                            print(" ")
+                        }
+                    }
                     println()
+                }
+                pixels.forEachIndexed { rowIndex, row ->
+                    row.forEachIndexed { col, v ->
+                        // The array value can be in the range 0..3, but
+                        // since we render only monochrome, we treat the
+                        // values as 0 or 1.
+                        if (v > 0) {
+                            val xr = x * 8 + col
+                            val yr = y * 8 + rowIndex
+                            image.set(xr, yr)
+                        }
+                    }
                 }
             }
         }
+        image.write("logo.pbm")
 
         Debug.hexdump(mem, 0x0104..0x0200)
         Debug.hexdump(mem, 0x8010..0x8020)
@@ -101,7 +117,8 @@ class Video(val mem: ByteArray) {
         for (idx in 0..7) {
             var start = tileAddr + idx * 2
             var a = mem[start]
-            var b = mem[start+1]
+            var b = mem[start + 1]
+            println("a=${a.hex(2)} b=${b.hex(2)}")
             for (bit in 7 downTo 0) {
                 val tmp = (1 shl bit).toByte()
                 val aset = (a and tmp) != 0x00.toByte()
@@ -111,7 +128,8 @@ class Video(val mem: ByteArray) {
             }
         }
 
-        return res
+        // Works, but I don't understand way, let's fix this...!
+        return res.map { row -> row.reversed().toTypedArray() }.toTypedArray()
     }
 
     /**
