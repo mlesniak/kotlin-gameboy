@@ -34,6 +34,9 @@ class CPU(private val cartridge: Path) {
     // i.e. the lower byte is first.
     private val mem = ByteArray(MEMORY_SIZE)
 
+    // Video RAM is actually memory-mapped part of the normal RAM.
+    private val video = Video(mem)
+
     // Registers
     private var pc = 0x0000
     private var sp = 0x0000
@@ -105,13 +108,25 @@ class CPU(private val cartridge: Path) {
     fun boot() {
         while (true) {
             executeNextInstruction()
+            video.tick()
         }
     }
+
+    private var step = false
+    private var breakAt: Int? = null
 
     // The main simulation loop.
     @Suppress("DuplicatedCode")
     private fun executeNextInstruction() {
         tick++
+        if (breakAt != null && pc == breakAt) {
+            step = true
+        }
+        if (step) {
+            dump()
+            print("?")
+            readLine()
+        }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
             0xCB -> {
@@ -217,6 +232,7 @@ class CPU(private val cartridge: Path) {
                     unset(Zero)
                 }
                 set(Subtraction)
+                a = r.toByte()
             }
 
             // LD A,H
@@ -483,6 +499,9 @@ class CPU(private val cartridge: Path) {
             0xE0 -> {
                 val addr = 0xFF00 + nextByte().toIgnoredSignInt()
                 mem[addr] = a
+                // dump()
+                // println(addr.hex(4))
+                // println(mem[addr].toIgnoredSignInt().hex(2))
             }
 
             // LD (HL),A
