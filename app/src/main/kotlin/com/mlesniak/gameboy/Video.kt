@@ -47,10 +47,18 @@ class Video(val mem: ByteArray) {
      * is set to 1). Parse byte accordingly and render it.
      */
     fun render() {
-        val image = PBM(256, 256)
+        // val image = PBM(256, 256)
+        val image = PBM(width, height)
 
         for (y in 0 until 31) {
             for (x in 0 until 31) {
+                // While memory allows for 256x256 pixel
+                // images, the Gameboy supports only 160x144.
+                // Stop before rendering more.
+                if (y * 8 >= height || x * 8 >= width) {
+                    continue
+                }
+
                 val addr = (y * 32 + x) + 0x9800
                 val tileIndex = mem[addr]
                 if (tileIndex == 0x00.toByte()) {
