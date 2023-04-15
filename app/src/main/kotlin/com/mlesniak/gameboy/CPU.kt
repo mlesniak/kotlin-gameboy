@@ -113,7 +113,7 @@ class CPU(private val cartridge: Path) {
     }
 
     private var step = false
-    private var breakAt: Int? = null
+    private var breakAt: Int? = null // 0x0027
 
     // The main simulation loop.
     @Suppress("DuplicatedCode")
@@ -124,8 +124,15 @@ class CPU(private val cartridge: Path) {
         }
         if (step) {
             dump()
-            print("?")
-            readLine()
+            while (true) {
+                print("?")
+                val addr = readLine()
+                if (addr!!.isNotBlank()) {
+                    dump(addr.toInt(16))
+                } else {
+                    break
+                }
+            }
         }
         when (val opcode = nextByte().toIgnoredSignInt()) {
             // Prefix for extended commands
@@ -133,7 +140,8 @@ class CPU(private val cartridge: Path) {
                 when (val opcode = nextByte().toIgnoredSignInt()) {
                     // RL C
                     0x11 -> {
-                        val cn = (c.toIgnoredSignInt() shl 1).toByte()
+                        val ca = if (isSet(Carry)) 1 else 0
+                        val cn = ((c.toIgnoredSignInt() shl 1) + ca).toByte()
                         if (cn == 0x00.toByte()) {
                             set(Zero)
                         } else {
@@ -442,7 +450,8 @@ class CPU(private val cartridge: Path) {
 
             // RLA
             0x17 -> {
-                val an = (a.toIgnoredSignInt() shl 1).toByte()
+                val ca = if (isSet(Carry)) 1 else 0
+                val an = ((a.toIgnoredSignInt() shl 1) + ca).toByte()
                 if (an == 0x00.toByte()) {
                     set(Zero)
                 } else {
@@ -585,6 +594,9 @@ class CPU(private val cartridge: Path) {
         pc--
         println("Unknown opcode 0x${opcode.hex(2)} at position 0x${pc.hex(4)}")
         dump()
+
+        video.render()
+
         // An exception just adds boilerplate output and is not helpful
         // since we control the call hierarchy completely, i.e. a stack
         // trace does not provide additional information anyway.
