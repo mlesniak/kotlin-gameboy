@@ -30,14 +30,14 @@ class Video(val mem: ByteArray) {
     var oldx: Byte = 0
     var oldy: Byte = 0
     fun tick() {
-        // if (oldx != mem[scx]) {
-        //     oldx = mem[scx]
-        //     println("scx=${oldx.hex(2)}")
-        // }
-        // if (oldy != mem[scy]) {
-        //     oldy = mem[scy]
-        //     println("scy=${oldy.hex(2)}")
-        // }
+        if (oldx != mem[scx]) {
+            oldx = mem[scx]
+            println("scx=${oldx.hex(2)}")
+        }
+        if (oldy != mem[scy]) {
+            oldy = mem[scy]
+            println("scy=${oldy.hex(2)}")
+        }
     }
 
     /**
@@ -61,11 +61,11 @@ class Video(val mem: ByteArray) {
 
                 val addr = (y * 32 + x) + 0x9800
                 val tileIndex = mem[addr]
-                if (tileIndex == 0x00.toByte()) {
-                    // TODO(mlesniak) remove this if later.
-                    continue
-                }
-                println(" ${tileIndex.hex(2)}")
+                // if (tileIndex == 0x00.toByte()) {
+                //     // TODO(mlesniak) remove this if later.
+                //     continue
+                // }
+                // println(" ${tileIndex.hex(2)}")
 
                 // For every tile, find the address
                 // referring to the actual tile data.
@@ -73,19 +73,19 @@ class Video(val mem: ByteArray) {
                 // of 16 (0x10) bytes, and we index
                 // into the whole memory map.
                 val tileAddr = 0x8000 + tileIndex * 0x10
-                Debug.hexdump(mem, tileAddr..tileAddr + 0x10)
+                // Debug.hexdump(mem, tileAddr..tileAddr + 0x10)
 
                 val pixels = toPixel(tileAddr)
-                pixels.forEach { row ->
-                    row.forEach { v ->
-                        if (v > 0) {
-                            print("#")
-                        } else {
-                            print(" ")
-                        }
-                    }
-                    println()
-                }
+                // pixels.forEach { row ->
+                //     row.forEach { v ->
+                //         if (v > 0) {
+                //             print("#")
+                //         } else {
+                //             print(" ")
+                //         }
+                //     }
+                //     println()
+                // }
                 pixels.forEachIndexed { rowIndex, row ->
                     row.forEachIndexed { col, v ->
                         // The array value can be in the range 0..3, but
@@ -126,7 +126,6 @@ class Video(val mem: ByteArray) {
             var start = tileAddr + idx * 2
             var a = mem[start]
             var b = mem[start + 1]
-            println("a=${a.hex(2)} b=${b.hex(2)}")
             for (bit in 7 downTo 0) {
                 val tmp = (1 shl bit).toByte()
                 val aset = (a and tmp) != 0x00.toByte()
