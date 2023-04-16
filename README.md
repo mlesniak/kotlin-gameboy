@@ -9,7 +9,7 @@ boots up [(reference video)](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_chan
 I've reached the goal, i.e. this application is able to generate the single frames of the
 animation, leading to this beautiful gif
 
-![](logo.gif)
+<img src="https://raw.githubusercontent.com/mlesniak/kotlin-gameboy/main/logo.gif"  width="600">
 
 To enable this, I've implemented
 
