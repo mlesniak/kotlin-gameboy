@@ -14,7 +14,7 @@ animation, leading to this beautiful gif
 To enable this, I've implemented
 
 - [x] loading both boot and cartridge ROMS in Gameboy format
-- [x] simulating the Gameboy classic CPU including all necessary registers, flags and instructions
+- [x] simulating the Gameboy classic CPU including all necessary registers, flags and instructions to **execute the original boot rom**.
 - [x] handling video output by understanding and simulating the PPU (in a pragmatic way)
 
 To keep this project small-ish, I've decided against adding a graphical library to show the results in realtime.
