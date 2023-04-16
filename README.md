@@ -1,15 +1,28 @@
 # Overview
 
-Initial goal: Show the Nintendo title animation when a gameboy 
-boots up [reference video](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro).
-Note that I've underestimated the complexity of the VRAM logic
-and am not interested in spending time to implement this for now.
+## Goal
+Show the Nintendo title animation when a gameboy 
+boots up [(reference video)](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro) by simulating the boot process of a real Gameboy CPU and corresponding units, e.g. its PPU.
 
 ## Current status
 
-**ABANDONED** -- I've implement all CPU instructions to simulate the necessary CPU instructions from 
-0x00 until 0xFF, i.e. the whole boot rom. The interpreter fails after all of the boot rom has successfully
-been interpreted, i.e. at position 0x100.
+I've reached the goal, i.e. this application is able to generate the single frames of the
+animation, leading to this beautiful gif
+
+![](logo.gif)
+
+To enable this, I've implemented
+
+- [x] loading both boot and cartridge ROMS in Gameboy format
+- [x] simulating the Gameboy classic CPU including all necessary registers, flags and instructions
+- [x] handling video output by understanding and simulating the PPU (in a pragmatic way)
+
+To keep this project small-ish, I've decided against adding a graphical library to show the results in realtime.
+Instead, for every frame a single image is written (and stored in `frames/`). These frames can 
+be concatenated to create a gif using ImageMagick.
+
+Note that the interpreter intentionally fails after the boot rom has successfully
+been interpreted and the animation has been played, i.e. stops at position 0x100 after generating the frames (which is expected).
 ```
 Unknown opcode 0x00 at position 0x0100
 PC=0100 SP=FFFE
@@ -19,36 +32,30 @@ Z1 N0 H0 C0
 00000100  00 c3 50 01 ce ed 66 66  cc 0d 00 0b 03 73 00 83  |..P...ff.....s..|
 00000110  00 0c 00 0d 00 08 11 1f  88 89 00 0e dc cc 6e e6  |..............n.|
 ```
-Unfortunately, I would now have to implement the whole VRAM controller logic 
-and interrupt handling (see https://gbdev.gg8.se/wiki/articles/Video_Display), 
-which is seemingly quite cumbersome and not very interesting for now. 
 
-Instead of forcing myself to spend my free time implementing something which
-I do not find interesting, I'm spending more time with the other pet projects
-which I'm more interested in for the time being ;-) #YOLO
+## Build, Compile and Run
 
-### Some additional notes
+This is a standard gradle project, i.e. you can build it via `gradle build` and generate the frames via `gradle run`. Once the frame have been generated, the animation can be created via
 
-(Which might help my memory if I every decide to touch this again...)
+```
+# brew install imagemagick
+convert -delay 1x30 -loop 0 frames/logo-*.ppm logo.gif
+```
 
-Quoting the documentation on the memory IO register [0xFF42](https://gbdev.gg8.se/wiki/articles/Video_Display#FF42_-_SCY_-_Scroll_Y_.28R.2FW.29.2C_FF43_-_SCX_-_Scroll_X_.28R.2FW.29), 
-the Gameboy video controller does not simply map the RAM to the video ram, but
-instead allows to specify the initial scan line (and automatically wraps) around,
-thus allowing scrolling while keeping the tile-indexed contents of memory fixed:
+## Some fun facts
 
-> FF42 - SCY - Scroll Y (R/W), FF43 - SCX - Scroll X (R/W)
-> >
-> Specifies the position in the 256x256 pixels BG map (32x32 tiles) which is to 
-> be displayed at the upper/left LCD display position. Values in range from 0-255 
-> may be used for X/Y each, the video controller automatically wraps back to 
-> the upper (left) position in BG map when drawing exceeds the lower (right) 
-> border of the BG map area.
+### Development process
 
-Hence, it is not sufficient to simply map some bytes from memory to some
-Kotlin-specific graphics library, but one has to simulate additional logic
-to correctly render it, i.e. the starting scanline should be read from `0xFF42`.
+Initially, I've abandoned the project before rendering the output because simulating the
+video processor (handling scanlines, etc.) seemed to be a daunting task. After having some
+new ideas I decided to take up the task again, leading to evenings where I spent my time 
+looking at screens like these
 
-## Fun fact
+![](dev-1.png)
+![](dev-2.png)
+
+
+### ROM logo parser
 In `com.mlesniak.gameboy.CPU.showLogo`, I've implement a method to interpret the boot rom logo data and show the
 parsed logo. 
 
