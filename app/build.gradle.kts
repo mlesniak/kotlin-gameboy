@@ -44,4 +44,5 @@ testing {
 application {
     // Define the main class for the application.
     mainClass.set("com.mlesniak.gameboy.MainKt")
+    tasks.run.get().workingDir = rootProject.projectDir
 }
