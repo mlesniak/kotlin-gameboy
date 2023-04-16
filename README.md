@@ -42,6 +42,8 @@ This is a standard gradle project, i.e. you can build it via `gradle build` and 
 convert -delay 1x30 -loop 0 frames/logo-*.ppm logo.gif
 ```
 
+Note that you need to have the files `boot.gb` (a Game Boy boot rom) and `tetris.gb` (an arbitrary Game Boy cartridge format) in the `rom` directory. For obvious reasons, these are not provided here.
+
 ## Some fun facts
 
 ### Development process
