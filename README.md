@@ -51,9 +51,12 @@ Note that you need to have the files `boot.gb` (a Game Boy boot rom) and `tetris
 Initially, I've abandoned the project before rendering the output because simulating the
 video processor (handling scanlines, etc.) seemed to be a daunting task. After having some
 new ideas I decided to take up the task again, leading to evenings where I spent my time 
-looking at screens like these
+looking at screens like the following:
 
+Looking at the instructions of the boot rom and understanding what happens when a Game Boy boots up:
 ![](dev-1.png)
+
+Looking at a running emulator to understand the memory layout of tile maps and video ram rendering:
 ![](dev-2.png)
 
 
