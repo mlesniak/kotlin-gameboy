@@ -595,8 +595,6 @@ class CPU(private val cartridge: Path) {
         println("Unknown opcode 0x${opcode.hex(2)} at position 0x${pc.hex(4)}")
         dump()
 
-        video.render()
-
         // An exception just adds boilerplate output and is not helpful
         // since we control the call hierarchy completely, i.e. a stack
         // trace does not provide additional information anyway.

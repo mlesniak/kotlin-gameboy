@@ -2,6 +2,7 @@ package com.mlesniak.gameboy
 
 import com.mlesniak.gameboy.debug.Debug
 import com.mlesniak.gameboy.debug.hex
+import javax.swing.Spring.height
 import kotlin.experimental.and
 
 /**
@@ -23,20 +24,22 @@ class Video(val mem: ByteArray) {
     val width = 160
     val height = 144
 
+    // val width = 256
+    // val height = 256
+
+
     // Position of the VRAM window upper and left corner.
     private val scy = 0xFF42
     private val scx = 0xFF43
 
-    var oldx: Byte = 0
+    var counter= 0
     var oldy: Byte = 0
     fun tick() {
-        if (oldx != mem[scx]) {
-            oldx = mem[scx]
-            println("scx=${oldx.hex(2)}")
-        }
         if (oldy != mem[scy]) {
             oldy = mem[scy]
-            println("scy=${oldy.hex(2)}")
+            // println("scy=${oldy.hex(2)}")
+            render(counter)
+            counter++
         }
     }
 
@@ -46,18 +49,24 @@ class Video(val mem: ByteArray) {
      * bytes) and add 0x8000 (since LCDC, bit 4 in 0xFF40
      * is set to 1). Parse byte accordingly and render it.
      */
-    fun render() {
-        // val image = PBM(256, 256)
-        val image = PBM(width, height)
+    fun render(counter: Int) {
+        // if (counter > 0) {
+        //     return
+        // }
+        val framebuffer = Array(256) { Array(256) {0} }
 
+        val fb = PBM(256, 256)
+        println("scy while rendering: ${mem[scy]}")
         for (y in 0 until 31) {
             for (x in 0 until 31) {
                 // While memory allows for 256x256 pixel
                 // images, the Gameboy supports only 160x144.
+                // TODO(mlesniak) format this
+                // Those specify the top-left coordinates of the visible 160×144 pixel area within the 256×256 pixels BG map. Values in the range 0–255 may be used.
                 // Stop before rendering more.
-                if (y * 8 >= height || x * 8 >= width) {
-                    continue
-                }
+                // if (y * 8 >= height || x * 8 >= width) {
+                //     continue
+                // }
 
                 val addr = (y * 32 + x) + 0x9800
                 val tileIndex = mem[addr]
@@ -70,8 +79,8 @@ class Video(val mem: ByteArray) {
                 // For every tile, find the address
                 // referring to the actual tile data.
                 // '* 0x10' since every tile contains
-                // of 16 (0x10) bytes, and we index
-                // into the whole memory map.
+                // 16 (0x10) bytes, and we index into
+                // the whole memory map.
                 val tileAddr = 0x8000 + tileIndex * 0x10
                 // Debug.hexdump(mem, tileAddr..tileAddr + 0x10)
 
@@ -88,25 +97,48 @@ class Video(val mem: ByteArray) {
                 // }
                 pixels.forEachIndexed { rowIndex, row ->
                     row.forEachIndexed { col, v ->
-                        // The array value can be in the range 0..3, but
+                        // The color value can be in the range 0..3, but
                         // since we render only monochrome, we treat the
                         // values as 0 or 1.
                         if (v > 0) {
                             val xr = x * 8 + col
-                            val yr = y * 8 + rowIndex
-                            image.set(xr, yr)
+                            var yr = y * 8 + rowIndex
+
+                            // Handle scanline -- for our specific problem
+                            // of displaying the logo, 0xFF43 / SCX never
+                            // changes, hence we have to adapt solely the
+                            // y coordinate.
+                            // val actualY = (mem[scy] + yr) % height
+                            // image.set(xr, actualY)
+                            framebuffer[yr][xr] = v
+                            fb.set(xr, yr)
                         }
                     }
                 }
             }
         }
-        image.write("logo.pbm")
+        fb.write("framebuffer.pbm")
 
-        Debug.hexdump(mem, 0x0104..0x0200)
-        Debug.hexdump(mem, 0x8010..0x8020)
-        println("trademark")
-        val i = 0x8000 + 0x18 * 0x10
-        Debug.hexdump(mem, i..i + 0x20)
+        // Render part of the framebuffer (based on SCX and SCY)
+        // to an image. Take care of wrapping around as well (in
+        // our case, this is only relevant for SCY, since SCX is
+        // constant anyway).
+        val image = PBM(width, height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val xr = (mem[scx] + x) % 256
+                val yr = (mem[scy] + y) % 256
+                // println("$x->$xr / $y->$yr")
+                if (framebuffer[yr][xr] != 0) {
+                    image.set(x, y)
+                }
+            }
+        }
+
+        val c = String.format("%05d", counter)
+        val filename = "logo-$c.pbm"
+        image.write(filename)
+        println(filename)
     }
 
     /**
