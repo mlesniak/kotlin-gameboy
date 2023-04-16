@@ -1,7 +1,7 @@
 # Overview
 
 ## Goal
-Show the Nintendo title animation when a gameboy 
+Show the Nintendo title animation when a Game Boy 
 boots up [(reference video)](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro) by simulating the boot process of a real Gameboy CPU and corresponding units, e.g. its PPU.
 
 ## Current status
