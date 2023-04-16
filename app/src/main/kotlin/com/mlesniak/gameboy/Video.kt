@@ -4,74 +4,90 @@ import kotlin.experimental.and
 
 /**
  * Since we do not want to add more external libraries, we simulate
- * video output by writing out PBM files on a continous basis.
+ * video output by writing out PPM files whenever a change in
+ * rendering state occurred.
  *
  * These files can be concatenated via external tools to create
- * a gif or a video.
+ * a gif or a video. To create a gif from the output, you have
+ * to install imagemagick via
+ *
+ *      brew install imagemagick
+ *
+ * and execute
+ *
+ *      convert -delay 1x30 -loop 0 logo-*.ppm logo.gif
  *
  * We receive the complete memory as a parameter and access only
  * the area which is related to the video output, which is stored
  * as tile references in $8000-$97FF (VRAM).
  *
  * VRAM background map referring to tiles is at 9800-9A33.
- * 20 tiles per row. -> 20 bytes per row.
  */
-// TODO(mlesniak) How often should we write a new file?
-class Video(val mem: ByteArray) {
-    val width = 160
-    val height = 144
+class Video(private val mem: ByteArray) {
+    private val outputDirectory = "frames/"
+    private val width = 160
+    private val height = 144
 
-    // val width = 256
-    // val height = 256
-
-
-    // Position of the VRAM window upper and left corner.
+    // Position of the VRAM window upper and left
+    // corner in memory.
     private val scy = 0xFF42
     private val scx = 0xFF43
-
-    var counter= 0
-    var oldy: Byte = 0
-    fun tick() {
-        if (oldy != mem[scy]) {
-            oldy = mem[scy]
-            // println("scy=${oldy.hex(2)}")
-            render(counter)
-            counter++
-        }
-    }
+    private var counter= 0
+    private var oldy: Byte = 0
 
     /**
      * Render video using indexed tile map at 0x9800. Take
      * each byte times 0x10 (since every tile contains 0x10
      * bytes) and add 0x8000 (since LCDC, bit 4 in 0xFF40
      * is set to 1). Parse byte accordingly and render it.
+     *
+     * We split rendering into two parts: the whole background
+     * map is 256x256, and we render the tilemap into a virtual
+     * framebuffer first. Afterwards, we use the 256x256 pixel
+     * area and cut out the actual image of dimensions 160x144
+     * by taking into account SCY and SCX.
+     *
+     * DO NOTHING IF SCY DID NOT CHANGE.
      */
-    fun render(counter: Int) {
-        // if (counter > 0) {
-        //     return
-        // }
-        val framebuffer = Array(256) { Array(256) {0} }
+    fun render() {
+        // Check if we have to do something,
+        // i.e. there was a state change affecting
+        // video output.
+        if (oldy == mem[scy]) {
+            return
+        }
+        oldy = mem[scy]
+        counter++
 
-        val fb = PPM(256, 256)
-        println("scy while rendering: ${mem[scy]}")
+        val framebuffer = renderIntoFramebuffer()
+        val filename = "logo-${String.format("%05d", counter)}.ppm"
+        renderIntoFile(framebuffer, filename)
+    }
+
+    private fun renderIntoFile(framebuffer: Array<Array<Int>>, filename: String) {
+        val image = PPM(width, height)
+        // Render part of the framebuffer (based on SCX and SCY)
+        // to an image. Take care of wrapping around as well (in
+        // our case, this is only relevant for SCY, since SCX is
+        // constant anyway).
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val xr = (mem[scx] + x) % 256
+                val yr = (mem[scy] + y) % 256
+                if (framebuffer[yr][xr] != 0) {
+                    image.set(x, y)
+                }
+            }
+        }
+        image.write(outputDirectory + filename)
+    }
+
+    private fun renderIntoFramebuffer(): Array<Array<Int>> {
+        val framebuffer = Array(256) { Array(256) { 0 } }
         for (y in 0 until 31) {
             for (x in 0 until 31) {
-                // While memory allows for 256x256 pixel
-                // images, the Gameboy supports only 160x144.
-                // TODO(mlesniak) format this
-                // Those specify the top-left coordinates of the visible 160×144 pixel area within the 256×256 pixels BG map. Values in the range 0–255 may be used.
-                // Stop before rendering more.
-                // if (y * 8 >= height || x * 8 >= width) {
-                //     continue
-                // }
-
                 val addr = (y * 32 + x) + 0x9800
                 val tileIndex = mem[addr]
-                // if (tileIndex == 0x00.toByte()) {
-                //     // TODO(mlesniak) remove this if later.
-                //     continue
-                // }
-                // println(" ${tileIndex.hex(2)}")
 
                 // For every tile, find the address
                 // referring to the actual tile data.
@@ -79,19 +95,10 @@ class Video(val mem: ByteArray) {
                 // 16 (0x10) bytes, and we index into
                 // the whole memory map.
                 val tileAddr = 0x8000 + tileIndex * 0x10
-                // Debug.hexdump(mem, tileAddr..tileAddr + 0x10)
 
-                val pixels = toPixel(tileAddr)
-                // pixels.forEach { row ->
-                //     row.forEach { v ->
-                //         if (v > 0) {
-                //             print("#")
-                //         } else {
-                //             print(" ")
-                //         }
-                //     }
-                //     println()
-                // }
+                // Write the expanded tile's pixel to
+                // the correct position in our framebuffer.
+                val pixels = expandTile(tileAddr)
                 pixels.forEachIndexed { rowIndex, row ->
                     row.forEachIndexed { col, v ->
                         // The color value can be in the range 0..3, but
@@ -100,42 +107,13 @@ class Video(val mem: ByteArray) {
                         if (v > 0) {
                             val xr = x * 8 + col
                             var yr = y * 8 + rowIndex
-
-                            // Handle scanline -- for our specific problem
-                            // of displaying the logo, 0xFF43 / SCX never
-                            // changes, hence we have to adapt solely the
-                            // y coordinate.
-                            // val actualY = (mem[scy] + yr) % height
-                            // image.set(xr, actualY)
                             framebuffer[yr][xr] = v
-                            fb.set(xr, yr)
                         }
                     }
                 }
             }
         }
-        fb.write("framebuffer.pbm")
-
-        // Render part of the framebuffer (based on SCX and SCY)
-        // to an image. Take care of wrapping around as well (in
-        // our case, this is only relevant for SCY, since SCX is
-        // constant anyway).
-        val image = PPM(width, height)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val xr = (mem[scx] + x) % 256
-                val yr = (mem[scy] + y) % 256
-                // println("$x->$xr / $y->$yr")
-                if (framebuffer[yr][xr] != 0) {
-                    image.set(x, y)
-                }
-            }
-        }
-
-        val c = String.format("%05d", counter)
-        val filename = "logo-$c.ppm"
-        image.write(filename)
-        println(filename)
+        return framebuffer
     }
 
     /**
@@ -145,7 +123,7 @@ class Video(val mem: ByteArray) {
      * See https://gbdev.io/pandocs/Tile_Data.html for
      * more information on the technical details.
      */
-    private fun toPixel(tileAddr: Int): Array<Array<Int>> {
+    private fun expandTile(tileAddr: Int): Array<Array<Int>> {
         val res: Array<Array<Int>> = Array(8) {
             Array(8) { 0 }
         }
@@ -166,15 +144,4 @@ class Video(val mem: ByteArray) {
 
         return res
     }
-
-    /**
-     * Hashes VRAM portion of memory which allows us to
-     * check if there were any modification done via the
-     * CPU instructions.
-     */
-    private fun hashVRAM(): Int =
-        mem.slice(0x8000..0x97FF).hashCode()
-
-    // 8192 bytes in VRAM
-
 }

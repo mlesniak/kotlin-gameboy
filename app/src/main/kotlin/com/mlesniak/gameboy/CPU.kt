@@ -108,12 +108,15 @@ class CPU(private val cartridge: Path) {
     fun boot() {
         while (true) {
             executeNextInstruction()
-            video.tick()
+            // Render output if necessary.
+            video.render()
         }
     }
 
     private var step = false
-    private var breakAt: Int? = null // 0x0027
+    // Set to an address of an instruction to start
+    // debug mode.
+    private var breakAt: Int? = null
 
     // The main simulation loop.
     @Suppress("DuplicatedCode")
@@ -508,9 +511,6 @@ class CPU(private val cartridge: Path) {
             0xE0 -> {
                 val addr = 0xFF00 + nextByte().toIgnoredSignInt()
                 mem[addr] = a
-                // dump()
-                // println(addr.hex(4))
-                // println(mem[addr].toIgnoredSignInt().hex(2))
             }
 
             // LD (HL),A
