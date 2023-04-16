@@ -1,8 +1,5 @@
 package com.mlesniak.gameboy
 
-import com.mlesniak.gameboy.debug.Debug
-import com.mlesniak.gameboy.debug.hex
-import javax.swing.Spring.height
 import kotlin.experimental.and
 
 /**
@@ -55,7 +52,7 @@ class Video(val mem: ByteArray) {
         // }
         val framebuffer = Array(256) { Array(256) {0} }
 
-        val fb = PBM(256, 256)
+        val fb = PPM(256, 256)
         println("scy while rendering: ${mem[scy]}")
         for (y in 0 until 31) {
             for (x in 0 until 31) {
@@ -123,7 +120,7 @@ class Video(val mem: ByteArray) {
         // to an image. Take care of wrapping around as well (in
         // our case, this is only relevant for SCY, since SCX is
         // constant anyway).
-        val image = PBM(width, height)
+        val image = PPM(width, height)
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val xr = (mem[scx] + x) % 256
@@ -136,7 +133,7 @@ class Video(val mem: ByteArray) {
         }
 
         val c = String.format("%05d", counter)
-        val filename = "logo-$c.pbm"
+        val filename = "logo-$c.ppm"
         image.write(filename)
         println(filename)
     }
