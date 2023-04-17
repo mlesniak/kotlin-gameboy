@@ -2,7 +2,7 @@
 
 ## Goal
 Show the Nintendo title animation when a Game Boy 
-boots up [(reference video)](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro) by simulating the boot process of a real Gameboy CPU and corresponding units, e.g. its PPU.
+boots up [(reference video)](https://www.youtube.com/watch?v=g9x6alnYvIU&ab_channel=i12bretro) by simulating the boot process of a real Gameboy CPU and corresponding units, e.g. its PPU when a real boot rom and cartride is loaded.
 
 ## Current status
 
